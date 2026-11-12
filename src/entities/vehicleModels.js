@@ -446,11 +446,11 @@ function greenhouse(B, T, S) {
 function headTail(B, T, L, ctx, o) {
   const { front, rear } = ctx, hw = ctx.hw;
   // headlight clusters (wrapping the nose corners): dark housing + lens wedge
-  const hy0 = o.hy0, hy1 = o.hy1, hx0 = hw * 0.36, hx1 = hw - 0.01;
+  const hy0 = o.hy0, hy1 = o.hy1, hx0 = hw * 0.5, hx1 = hw - 0.01;
   const tt = (x) => (x - hx0) / (hx1 - hx0);
   wrapStrip(T, front, hx0 - 0.03, hx1, (x) => hy0 - 0.025 + tt(x) * (hy1 - hy0 - 0.03), hy1 + 0.025, 0.008, DARK);
   wrapStrip(L, front, hx0, hx1, (x) => hy0 + tt(x) * (hy1 - hy0 - 0.05), hy1, 0.014, LIGHT_WHITE, R_HEAD);
-  const tx0 = hw * 0.42, tty = (x) => (x - tx0) / (hw - 0.01 - tx0);
+  const tx0 = hw * 0.5, tty = (x) => (x - tx0) / (hw - 0.01 - tx0);
   wrapStrip(T, rear, tx0 - 0.03, hw - 0.01, (x) => o.ty0 - 0.02 + tty(x) * 0.02, o.ty1 + 0.02, 0.008, DARK);
   wrapStrip(L, rear, tx0, hw - 0.01, (x) => o.ty0 + tty(x) * 0.02, (x) => o.ty1 - tty(x) * 0.03, 0.014, LIGHT_WHITE, R_TAIL);
   // dark grille + lower intake + bumper band on the nose
