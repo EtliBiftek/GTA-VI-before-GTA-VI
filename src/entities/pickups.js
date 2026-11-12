@@ -58,7 +58,7 @@ export function createPickups(game) {
     const root = new THREE.Group();
     const ring = new THREE.Mesh(ringGeo, ringMat(COLORS[type] || 0xffffff));
     ring.position.y = 0.06;
-    const item = buildItem(type, weaponId);
+    const item = buildItem(type === 'healthshop' ? 'health' : type, weaponId);
     root.add(ring, item);
     root.userData = { key, ring, item };
     scene.add(root);
