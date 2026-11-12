@@ -44,6 +44,7 @@ export function createVehicles(game) {
   let sirenClock = 0;
   let popTimer = 0;
   let nodeMap = null;
+  let uidCounter = 0;
 
   // ------------------------------------------------------------------------------------------
   // Roads helpers
@@ -123,14 +124,14 @@ export function createVehicles(game) {
       ai: {
         mode, target: opts.target || null, from: null, to: null, next: null,
         cruise: rand(10, 14), wait: 0, ignoreT: 0, panic: 0, stuckT: 0, revT: 0, revSteer: 0,
-        navNode: null, navPrev: null, los: false, losT: 0, honkT: 0, blockT: 0, laneT: 0, idleT: 0,
+        navNode: null, navPrev: null, _prevMode: mode, los: false, losT: 0, honkT: 0, blockT: 0, laneT: 0, idleT: 0,
       },
       seatOffset: new THREE.Vector3(T.halfW * 0.42, 0.45, T.id === 'bus' ? T.halfL - 1.2 : 0.15),
       doorOffset: new THREE.Vector3(T.halfW + 0.6, 0, T.id === 'bus' ? T.halfL - 1.2 : 0.15),
       lastAttacker: null, ambient: !!opts.ambient,
       _model: model, _lightKey: -1, _spin: 0, _roll: 0, _pitch: 0, _prevVf: 0, _gripK: 1,
       _crashCd: 0, _emitS: 0, _emitF: 0, _burn: 0, _wreckT: 0, _lastDriver: driver,
-      _awake: true, _exit: { x: 0, z: 0 }, _vis: true,
+      _uid: ++uidCounter, _awake: true, _exit: { x: 0, z: 0 }, _vis: true,
       getExitPoint() { return exitPoint(v); },
       takeDamage(amount, source) { damageVehicle(v, amount, source); },
       repair() {
@@ -305,7 +306,7 @@ export function createVehicles(game) {
     if (v.driver === 'ai' || v.driver === 'cop') { v.driver = null; v._lastDriver = null; }
     if (v.ai.mode !== 'none' || v.driver !== 'player') v.ai.mode = 'none';
     const x = v.position.x, z = v.position.z, y = 0.8;
-    fx.explosion(x, y, z, EXPLOSION_RADIUS);
+    // Explosion FX + ped / on-foot player damage are done by weapons.js for every 'explosion' event.
     applyBlast(x, z, EXPLOSION_RADIUS, attacker, v, true);
     // player inside
     if (wasPlayer && pl && pl.alive !== false) {
@@ -335,22 +336,13 @@ export function createVehicles(game) {
       o._awake = true;
     }
     if (!full) return;
-    const peds = game.peds?.list;
-    if (peds) {
-      for (let i = 0; i < peds.length; i++) {
-        const p = peds[i];
-        if (!p || p.alive === false || !p.position) continue;
-        const d = Math.hypot(p.position.x - x, p.position.z - z);
-        if (d < R) p.takeDamage?.(160 * (1 - d / R) + 10, { kind: 'explosion', attacker });
-      }
-    }
     const pl = game.player;
     if (pl && pl.alive !== false && pl.position && !(self && pl.vehicle === self && self.driver === 'player')) {
       const d = Math.hypot(pl.position.x - x, pl.position.z - z);
       if (d < R) {
         const f = 1 - d / R;
-        const inCar = pl.inVehicle || pl.vehicle;
-        pl.takeDamage?.(inCar ? 35 * f : 120 * f + 5, { kind: 'explosion', attacker });
+        // on foot is handled by weapons.js; protect against blasts hitting the player's car
+        if (pl.inVehicle || pl.vehicle) pl.takeDamage?.(35 * f, { kind: 'explosion', attacker });
       }
     }
   }
@@ -358,7 +350,6 @@ export function createVehicles(game) {
   events.on('explosion', (e) => {
     if (emittingOwn || !e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) return;
     const R = e.radius || 6;
-    fx.explosion(e.x, e.y ?? 0.5, e.z, R);
     applyBlast(e.x, e.z, R, e.attacker || null, e.vehicle || null, false);
   });
 
@@ -494,9 +485,11 @@ export function createVehicles(game) {
         if (fwd <= 0 || fwd > lim) continue;
         const lat = -dx * fz + dz * fx;
         if (Math.abs(lat) > v.halfW + o.halfW * 0.8 + 0.3) continue;
-        const rc = Math.abs(Math.cos(o.heading - v.heading));
+        const rcs = Math.cos(o.heading - v.heading), rc = Math.abs(rcs);
         const ext = o.halfL * rc + o.halfW * (1 - rc);
         const gap = fwd - v.halfL - ext;
+        // right of way between crossing / turning AI cars (deterministic -> no mutual deadlock)
+        if (rcs < 0.7 && gap > 1.5 && o.driver && o.driver !== 'player' && !o.destroyed && v._uid < o._uid) continue;
         if (gap < probe.gap) { probe.gap = gap; probe.byVehicle = true; probe.blocker = o; probe.byPlayer = o.driver === 'player'; }
       }
     }
@@ -587,7 +580,7 @@ export function createVehicles(game) {
         vd = lim;
         if (vd < 0.5) {
           ai.wait += dt;
-          if (probe.byVehicle && ai.wait > 7 && !probe.byPlayer) { ai.ignoreT = 2.5; ai.wait = 0; }
+          if (probe.byVehicle && ai.wait > 5 && !probe.byPlayer) { ai.ignoreT = 2.5; ai.wait = 0; }
           if (probe.byPlayer) {
             ai.blockT += dt; ai.honkT -= dt;
             if (ai.blockT > 2 && ai.honkT <= 0) { ai.honkT = rand(3, 6); events.emit('vehicle:horn', { vehicle: v }); }
@@ -715,8 +708,6 @@ export function createVehicles(game) {
       const l = Math.hypot(dx, dz);
       if (l > 1e-6) { ax += dx; az += dz; } else if (o.nx || o.nz) { ax += o.nx * 0.01; az += o.nz * 0.01; }
       hit = true;
-      // spin from off-centre hits
-      v.angVel += clamp((off * (dx * c - dz * s)) * 0.6, -0.6, 0.6) * 0; // (kept neutral; stability)
     }
     if (!hit) return;
     const l = Math.hypot(ax, az);
@@ -997,6 +988,10 @@ export function createVehicles(game) {
       }
       if (v._crashCd > 0) v._crashCd -= dt;
       const ai = v.ai;
+      if (ai.mode !== ai._prevMode) { // mode switched externally (police/missions): reset AI state
+        ai._prevMode = ai.mode; ai.from = ai.to = ai.next = null; ai.navNode = ai.navPrev = null;
+        ai.revT = 0; ai.stuckT = 0; ai.laneT = 0;
+      }
       if (v.destroyed) setCtl(0, 0, false, true, false);
       else if (v.driver === 'player') {
         if (pl && pl.alive === false) setCtl(0, 0, true, false, true);
