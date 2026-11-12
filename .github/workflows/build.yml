@@ -1,0 +1,106 @@
+name: Build (APK + EXE)
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BUILD_NUMBER: ${{ github.run_number }}
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Build web bundle
+        run: npm run build
+      - name: Sync Capacitor
+        run: npx cap sync android
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/NeonCoast.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NeonCoast-android-apk
+          path: out/NeonCoast.apk
+          if-no-files-found: error
+
+  windows:
+    name: Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build web bundle
+        run: npm run build
+      - name: Package portable EXE
+        run: npx electron-builder --win --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NeonCoast-windows-exe
+          path: release/NeonCoast-win-x64.exe
+          if-no-files-found: error
+
+  release:
+    name: Publish rolling release
+    needs: [android, windows]
+    if: github.event_name == 'push' && (github.ref_name == github.event.repository.default_branch || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
+        run: |
+          ls -la artifacts
+          if [ "$TAG" = "latest" ]; then
+            gh release delete latest --yes --cleanup-tag || true
+            gh release create latest artifacts/NeonCoast.apk artifacts/NeonCoast-win-x64.exe \
+              --target "$GITHUB_SHA" --title "Neon Coast (son derleme #$BUILD_NUMBER)" \
+              --notes "Otomatik derleme: Android APK ve Windows EXE. Commit: $GITHUB_SHA" --prerelease
+          else
+            gh release create "$TAG" artifacts/NeonCoast.apk artifacts/NeonCoast-win-x64.exe \
+              --title "Neon Coast $TAG" --generate-notes
+          fi

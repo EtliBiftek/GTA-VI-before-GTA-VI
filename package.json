@@ -1,0 +1,52 @@
+{
+  "name": "neon-coast",
+  "version": "0.1.0",
+  "description": "Neon Coast - open world action sandbox (web / Android / Windows)",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "author": "Neon Coast",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "electron .",
+    "dist:win": "vite build && electron-builder --win --x64 --publish never",
+    "android:sync": "vite build && cap sync android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "electron": "^45.3.1",
+    "electron-builder": "^26.18.0",
+    "three": "^0.187.0",
+    "vite": "^8.3.8"
+  },
+  "build": {
+    "appId": "com.neoncoast.game",
+    "productName": "Neon Coast",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "NeonCoast-${version}-win-x64.${ext}"
+    },
+    "portable": {
+      "artifactName": "NeonCoast-win-x64.exe"
+    }
+  }
+}
