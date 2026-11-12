@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { EventBus } from './core/events.js';
 import { Input } from './core/input.js';
+import { createGraphics } from './core/graphics.js';
 import { createWorld } from './world/city.js';
 import { createVehicles } from './entities/vehicles.js';
 import { createPeds } from './entities/peds.js';
@@ -20,8 +21,8 @@ const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
   (navigator.maxTouchPoints > 1 && matchMedia('(pointer: coarse)').matches);
 
 const QUALITY = {
-  low: { pixelRatio: 1, shadows: false, drawDistance: 260, density: 0.5 },
-  medium: { pixelRatio: 1.5, shadows: false, drawDistance: 420, density: 0.8 },
+  low: { pixelRatio: 1.25, shadows: false, drawDistance: 260, density: 0.5 },
+  medium: { pixelRatio: 1.5, shadows: true, drawDistance: 420, density: 0.8 },
   high: { pixelRatio: 2, shadows: true, drawDistance: 650, density: 1 },
 };
 
@@ -129,6 +130,8 @@ document.addEventListener('pointerlockchange', () => {
   game._hadLock = !!document.pointerLockElement;
 });
 
+game.graphics = createGraphics(game);
+
 const errCount = {};
 function run(name, dt) {
   try { game[name].update?.(dt); } catch (e) {
@@ -162,7 +165,7 @@ function frame(now) {
   }
   for (const n of always) run(n, dt);
 
-  renderer.render(scene, camera);
+  game.graphics.render();
   game.input.endFrame();
 }
 requestAnimationFrame(frame);
