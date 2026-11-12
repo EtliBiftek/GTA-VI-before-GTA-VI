@@ -22,9 +22,9 @@ const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
   (navigator.maxTouchPoints > 1 && matchMedia('(pointer: coarse)').matches);
 
 const QUALITY = {
-  low: { pixelRatio: 1.25, shadows: false, drawDistance: 260, density: 0.5 },
-  medium: { pixelRatio: 1.5, shadows: true, drawDistance: 420, density: 0.8 },
-  high: { pixelRatio: 2, shadows: true, drawDistance: 650, density: 1 },
+  low: { pixelRatio: 1.25, shadows: false, drawDistance: 260, density: 0.5, post: 'none', particles: 0.5 },
+  medium: { pixelRatio: 1.5, shadows: true, drawDistance: 420, density: 0.8, post: 'basic', particles: 0.8 },
+  high: { pixelRatio: 2, shadows: true, drawDistance: 650, density: 1, post: 'full', particles: 1 },
 };
 
 const saved = (() => { try { return JSON.parse(localStorage.getItem('neoncoast.settings') || '{}'); } catch { return {}; } })();
@@ -158,6 +158,7 @@ function frame(now) {
     else {
       game.state.time += dt;
       for (const n of sim) run(n, dt);
+      try { game.graphics?.update(dt); } catch (e) { /* gfx must never break the sim */ }
     }
   } else if (game.state.mode === 'menu') {
     // Slow fly-around behind the title screen.

@@ -13,7 +13,7 @@ export const BRIDGES = [
 ];
 const AV_COLS = new Set([3, 8, 14, 19, 22]), AV_ROWS = new Set([3, 9, 15, 19]);
 /** lattice edges turned into pedestrian streets (no asphalt, not in the graph) */
-const PED_V = [[12, 9], [12, 10]]; // Istiklal-like avenue, x = xs[12]
+export const PED_V = [[12, 9], [12, 10]]; // Istiklal-like avenue, x = xs[12]
 
 export function buildRoadGraph(G, rnd) {
   const { xs, zs } = G, N1 = NC + 1;
@@ -41,6 +41,8 @@ export function buildRoadGraph(G, rnd) {
     const coast = (a && inMap(i, j) && !land(i, j)) || (b && inMap(i - 1, j) && !land(i - 1, j));
     V.set(hk(i, j), { coast, both: a && b });
   }
+  const zoneCells = new Set();
+  for (const name of Object.keys(ZONES)) { const [i0, j0, i1, j1] = ZONES[name]; for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) zoneCells.add(i * NC + j); }
   for (const k of zoneInternal.h) H.delete(k);
   for (const k of zoneInternal.v) V.delete(k);
   // district drop probabilities
@@ -72,6 +74,7 @@ export function buildRoadGraph(G, rnd) {
   for (const [t, i, j] of cand) {
     const cells = t === 'h' ? cellsOfH(i, j) : cellsOfV(i, j);
     if (!cells.every(([a, b]) => inMap(a, b))) continue;
+    if (cells.some(([a, b]) => zoneCells.has(a * NC + b))) continue;
     if (cells.some(([a, b]) => mc[a * NC + b] > 0)) continue;
     if (rnd() > pDrop(G.ch(cells[0][0], cells[0][1]))) continue;
     const ends = t === 'h' ? [[i, j], [i + 1, j]] : [[i, j], [i, j + 1]];

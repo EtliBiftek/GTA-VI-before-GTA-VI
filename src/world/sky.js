@@ -10,9 +10,9 @@ const KEYS = [
   K(4.5, 0x070c2a, 0x1b2552, 0x7080ff, 0, 0x3a4a8a, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
   K(5.75, 0x23336e, 0xe07a8a, 0xff9a80, 0, 0x6a6aa0, 0x2a2438, 0.6, 0.3, 0.7, 0x2a3a6a),
   K(6.75, 0x4a78c8, 0xffb98a, 0xffc890, 1.2, 0x9db4e0, 0x6a5a50, 0.8, 0, 0.1, 0x2f8ab0),
-  K(9, 0x3a82e0, 0xb4d8f0, 0xfff2dc, 2.6, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x1aa6c0),
-  K(13, 0x2d78dc, 0xa8d4f4, 0xfffbf0, 2.9, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x16a2c4),
-  K(16.5, 0x3a7fd6, 0xb8d6ee, 0xfff0d0, 2.6, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x1a9ec0),
+  K(9, 0x3a82e0, 0xb4d8f0, 0xfff2dc, 2.6, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x1b739c),
+  K(13, 0x2d78dc, 0xa8d4f4, 0xfffbf0, 2.9, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x18709d),
+  K(16.5, 0x3a7fd6, 0xb8d6ee, 0xfff0d0, 2.6, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x1b739c),
   K(17.75, 0x5068c8, 0xffc08a, 0xffa860, 1.9, 0xd8b8c0, 0x7a5a58, 0.85, 0, 0.05, 0x2a86b0),
   K(18.6, 0x3a3a9a, 0xff6a9e, 0xff6a50, 1.0, 0xc67aaa, 0x4a3050, 0.7, 0.1, 0.6, 0x6a4a9a),
   K(19.5, 0x1c1a5c, 0xb0489a, 0xd0407a, 0.2, 0x7a5aa0, 0x2a2040, 0.6, 0.3, 0.95, 0x3a2a6a),
@@ -28,7 +28,7 @@ float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
   return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x), mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x), f.y); }
 `;
 
-export function createSky(game, onEnv, waterGeo) {
+export function createSky(game, onEnv, waterGeo, shore) {
   const scene = game.scene, tier = TIER(game.settings.quality);
   const cur = { top: new THREE.Color(), hor: new THREE.Color(), sun: new THREE.Color(), hemiS: new THREE.Color(), hemiG: new THREE.Color(), water: new THREE.Color(), sunI: 0, hemiI: 0, moonI: 0, night: 0 };
   const sunDir = new THREE.Vector3(0, 1, 0.3).normalize(), moonDir = new THREE.Vector3(), tmp = new THREE.Vector3(), target = new THREE.Vector3(), fwd = new THREE.Vector3(), fogC = new THREE.Color();
@@ -109,7 +109,7 @@ export function createSky(game, onEnv, waterGeo) {
   scene.fog = new THREE.Fog(0xa8d4f4, 100, 300);
 
   // ---- ocean ----
-  const waterUni = { uTime: { value: 0 }, uWaveN: { value: makeWaterNormal(tier) }, uShallow: { value: new THREE.Color(0x4fe0d0) }, uAmp: { value: 0.55 } };
+  const waterUni = { uTime: { value: 0 }, uWaveN: { value: makeWaterNormal(tier) }, uShallow: { value: new THREE.Color(0x4fe0d0) }, uAmp: { value: 0.55 }, uShore: { value: shore?.tex || null }, uHalf: { value: shore?.half || 800 } };
   waterUni.uWaveN.value.anisotropy = tier > 0 ? 4 : 1;
   const waterMat = new THREE.MeshStandardMaterial({ color: 0x1aa6c0, roughness: 0.1, metalness: 0.05, envMapIntensity: 1.6 });
   waterMat.onBeforeCompile = (sh) => {
@@ -117,12 +117,11 @@ export function createSky(game, onEnv, waterGeo) {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = (modelMatrix*vec4(transformed,1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos; uniform float uTime; uniform sampler2D uWaveN; uniform vec3 uShallow; uniform float uAmp;\n${NOISE_GLSL}\nfloat foamMask = 0.0;`)
+      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos; uniform float uTime; uniform sampler2D uWaveN; uniform vec3 uShallow; uniform float uAmp; uniform sampler2D uShore; uniform float uHalf;\n${NOISE_GLSL}\nfloat foamMask = 0.0;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
-        float shoreX = 520.0 + clamp((vWPos.z+300.0)/60.0,0.0,1.0)*(5.5*sin(vWPos.z*0.011)+2.5*sin(vWPos.z*0.037+1.0));
-        float sdist = vWPos.x - shoreX;
-        float shallow = 1.0 - smoothstep(0.0, 42.0, sdist);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uShallow*(diffuseColor.rgb*1.6+0.2), shallow*0.8);
+        float sdist = texture2D(uShore, clamp((vWPos.xz + uHalf)/(2.0*uHalf), 0.0, 1.0)).r*48.0;
+        float shallow = 1.0 - smoothstep(0.0, 26.0, sdist);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uShallow*(diffuseColor.rgb*1.4+0.1), shallow*0.5);
         float fn = vn(vWPos.xz*0.45 + uTime*0.08);
         float wv = sin(sdist*0.8 - uTime*1.5 + fn*4.0)*0.5+0.5;
         foamMask = smoothstep(3.4, 0.0, sdist)*(0.35+0.65*wv)*smoothstep(0.25,0.6,fn+0.25) + smoothstep(0.9,0.0,sdist);

@@ -159,20 +159,20 @@ export function makeKit(ctx) {
     facadeBox(B, 'deco', r.minX, r.minZ, r.maxX, r.maxZ, 0, H, col, o.shop !== false);
     if (o.bays && floors >= 3) {
       for (const [ax, az, ux, uz, nx, nz, len] of wallsOf(r)) {
-        if (!faces[faceKey(nx, nz)] || len < 8 || vr() > 0.62) continue;
+        if (!faces[faceKey(nx, nz)] || len < 8 || vr() > (tier ? 0.62 : 0.3)) continue;
         const nb = len > 15 ? 2 : 1, f0 = 1 + Math.floor(vr() * 1.4), top = Math.max(f0 + 1, floors - 1 - Math.floor(vr() * 1.5)), yy0 = f0 * F.floor + 0.2, yy1 = Math.min(H - 0.8, (top - (vr() < 0.5 ? 0 : 1)) * F.floor + 2.7);
         if (yy1 - yy0 < 2.4) continue;
         for (let k = 0; k < nb; k++) { const t = len * ((k + 0.5) / nb) + rv(-0.8, 0.8); bay(B, ax + ux * t + nx * 0.02, az + uz * t + nz * 0.02, nx, nz, yy0, yy1, col); }
       }
     }
     let top = H;
-    if (o.cornice !== false && floors >= 3) cornice(B, r, H, C(0xded6c6));
+    if (tier && o.cornice !== false && floors >= 3) cornice(B, r, H, C(0xded6c6));
     if (o.roof === 'hip') { const rise = hipRoof(B, r, H + 0.1, C(rpick(ROOFS))); top = H + rise; }
     else {
       flatT(B).rect(r.minX, r.minZ, r.maxX, r.maxZ, H, C(0x8d8f96));
-      parapet(B, r, H); roofProps(B, r, H, 1 + Math.floor(vr() * 3)); top = H + 1.6;
+      if (tier) { parapet(B, r, H); roofProps(B, r, H, 1 + Math.floor(vr() * 3)); } top = H + 1.6;
     }
-    if (o.shop !== false) { awnings(B, r, faces); blades(B, r, H, faces, 0.3); }
+    if (o.shop !== false && tier) { awnings(B, r, faces); blades(B, r, H, faces, 0.3); }
     addCollider(r.minX, r.maxX, r.minZ, r.maxZ, top, true);
     return H;
   }
@@ -184,9 +184,9 @@ export function makeKit(ctx) {
       for (const [ax, az, ux, uz, nx, nz, len] of wallsOf(r)) if (len > 9 && vr() < 0.4 && (!o.faces || o.faces[faceKey(nx, nz)])) bay(B, ax + ux * len * rv(0.3, 0.7), az + uz * len * rv(0.3, 0.7), nx, nz, 2 * F.floor + 0.2, Math.min(H - 1, 4 * F.floor), col);
     }
     flatT(B).rect(r.minX, r.minZ, r.maxX, r.maxZ, H, C(0x8d8f96));
-    parapet(B, r, H); roofProps(B, r, H, 2 + Math.floor(vr() * 3));
-    if (kind === 'deco' && o.shop !== false) { awnings(B, r, o.faces); blades(B, r, H, o.faces, 0.3); }
-    B.solid.box(r.minX - 0.05, 0, r.minZ - 0.05, r.maxX + 0.05, 0.3, r.maxZ + 0.05, C(0x5d5f66));
+    if (tier) { parapet(B, r, H); roofProps(B, r, H, 2 + Math.floor(vr() * 3)); }
+    if (kind === 'deco' && o.shop !== false && tier) { awnings(B, r, o.faces); blades(B, r, H, o.faces, 0.3); }
+    if (tier) B.solid.box(r.minX - 0.05, 0, r.minZ - 0.05, r.maxX + 0.05, 0.3, r.maxZ + 0.05, C(0x5d5f66));
     addCollider(r.minX, r.maxX, r.minZ, r.maxZ, H + 1.6, true);
     return H;
   }
@@ -236,7 +236,7 @@ export function makeKit(ctx) {
     s.box(rect.minX - 1.5, 4.2, rect.minZ + 0.2, rect.minX + 0.2, 4.45, rect.maxZ - 0.2, PC); s.box(rect.maxX - 0.2, 4.2, rect.minZ + 0.2, rect.maxX + 1.5, 4.45, rect.maxZ - 0.2, PC);
     s.box(rect.minX - 0.1, 0, rect.minZ - 0.1, rect.maxX + 0.1, 0.45, rect.maxZ + 0.1, C(0x6a6d75));
     parapet(B, rect, hp, 0.5, C(0xaab0b8));
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) s.box(sx < 0 ? sr.minX - 0.12 : sr.maxX - 0.6, hp, sz < 0 ? sr.minZ - 0.12 : sr.maxZ - 0.6, sx < 0 ? sr.minX + 0.6 : sr.maxX + 0.12, H, sz < 0 ? sr.minZ + 0.6 : sr.maxZ + 0.12, PC);
+    if (tier) for (const sx of [-1, 1]) for (const sz of [-1, 1]) s.box(sx < 0 ? sr.minX - 0.12 : sr.maxX - 0.6, hp, sz < 0 ? sr.minZ - 0.12 : sr.maxZ - 0.6, sx < 0 ? sr.minX + 0.6 : sr.maxX + 0.12, H, sz < 0 ? sr.minZ + 0.6 : sr.maxZ + 0.12, PC);
     parapet(B, sr, H, 0.7, C(0xb5bbc4));
     const nc = vpick(NEON); B.glow.box(sr.minX - 0.07, H - 1.6, sr.minZ - 0.07, sr.maxX + 0.07, H - 1.25, sr.maxZ + 0.07, nc);
     if (vr() < 0.6) B.glow.box(sr.minX - 0.07, H * 0.55, sr.minZ - 0.07, sr.maxX + 0.07, H * 0.55 + 0.25, sr.maxZ + 0.07, nc);

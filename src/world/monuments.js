@@ -63,7 +63,8 @@ export function makeMonuments(ctx, kit) {
     // minarets
     const nm = o.minarets ?? 2, mh = o.mh ?? Math.max(26, s * 0.62), mpos = [];
     const mu = s / 2 + 2.4;
-    if (nm >= 2) mpos.push(M(-mu, v1 + 1.5), M(mu, v1 + 1.5));
+    if (nm >= 1) mpos.push(M(mu, v1 + 1.5));
+    if (nm >= 2) mpos.push(M(-mu, v1 + 1.5));
     if (nm >= 4) mpos.push(M(-mu, v0 - 1.5), M(mu, v0 - 1.5));
     if (nm >= 6 && o.courtyard !== false) { const cv1 = D / 2 - 3, cw = Math.min(Wd - 4, s * 1.05) / 2; mpos.push(M(-cw - 1.5, cv1), M(cw + 1.5, cv1)); }
     for (const p of mpos) { minaret(S, p[0], p[1], mh, { twin: nm >= 6, lead: LEAD2, stone: o.stone ?? 0xf0e8d8 }); addCollider(p[0] - 1.9, p[0] + 1.9, p[1] - 1.9, p[1] + 1.9, mh); }
