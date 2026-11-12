@@ -1,7 +1,7 @@
 # Neon Coast — Architecture & Module Contract
 
 Original open-world action sandbox (third person, on foot + driving, traffic, pedestrians,
-police/wanted system, weapons, missions) set in the fictional sunny coastal city **Palmera**.
+police/wanted system, weapons, missions) set in a stylised, compressed **Istanbul** (Bosphorus, Golden Horn, both shores, bridges).
 Everything is original: no names, characters, logos, map layouts or art from any existing game.
 
 - Tech: **Three.js** (ES modules) + **Vite**. No physics engine, no external assets — all geometry,

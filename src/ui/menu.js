@@ -100,7 +100,7 @@ export function createMenu(game) {
     const w = el('h1', 'nc-word nc-head', logo);
     w.appendChild(document.createTextNode('NEON')); el('span', '', w, 'COAST');
     if (paused) el('div', 'nc-tag', logo, 'Duraklatıldı');
-    else el('div', 'nc-tag', logo, 'Palmera şehrine hoş geldin');
+    else el('div', 'nc-tag', logo, "İstanbul'a hoş geldin");
 
     const col = el('div', '', shell);
     const btns = el('div', 'nc-btns', col);
