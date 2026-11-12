@@ -117,7 +117,7 @@ export function bodyMaterial(color) {
   const key = typeof color === 'number' ? color : new THREE.Color(color).getHex();
   let m = matCache.get(key);
   if (!m) {
-    m = new THREE.MeshStandardMaterial({ color: key, roughness: 0.42, metalness: 0.35 });
+    m = new THREE.MeshStandardMaterial({ color: key, roughness: 0.5, metalness: 0.1 });
     matCache.set(key, m);
   }
   return m;

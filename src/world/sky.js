@@ -108,9 +108,9 @@ export function createSky(game, onEnv, waterGeo) {
     tmp.copy(sunDir); tmp.y = Math.max(tmp.y, 0.05); tmp.normalize();
     sun.color.copy(cur.sun); sun.intensity = cur.sunI * (sunDir.y > -0.1 ? 1 : 0);
     sun.target.position.copy(target); sun.position.copy(target).addScaledVector(tmp, 300);
-    moonLight.intensity = cur.moonI; tmp.copy(sunDir).multiplyScalar(-1); tmp.y = Math.max(tmp.y, 0.15); tmp.normalize();
+    moonLight.intensity = cur.moonI + cur.night * 1.2; tmp.copy(sunDir).multiplyScalar(-1); tmp.y = Math.max(tmp.y, 0.15); tmp.normalize();
     moonLight.target.position.copy(target); moonLight.position.copy(target).addScaledVector(tmp, 200);
-    hemi.color.copy(cur.hemiS); hemi.groundColor.copy(cur.hemiG); hemi.intensity = cur.hemiI;
+    hemi.color.copy(cur.hemiS); hemi.groundColor.copy(cur.hemiG); hemi.intensity = cur.hemiI + cur.night * 2.2;
     // fog
     mode = st.mode;
     const dd = q.drawDistance * (mode === 'menu' ? 1.8 : 1);

@@ -14,7 +14,7 @@ export function createMarkers(THREE, scene, max = 6) {
     if (!m) {
       const base = { color, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false };
       m = {
-        cyl: new THREE.MeshBasicMaterial({ ...base, opacity: 0.22 }),
+        cyl: new THREE.MeshBasicMaterial({ ...base, opacity: 0.07, side: THREE.FrontSide }),
         ring: new THREE.MeshBasicMaterial({ ...base, opacity: 0.85 }),
         arrow: new THREE.MeshBasicMaterial({ ...base, opacity: 0.95 }),
       };

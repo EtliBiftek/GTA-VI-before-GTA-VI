@@ -373,7 +373,7 @@ export function createPlayer(game) {
     } else if (aiming) {
       dist = 2.4; fov = AIM_FOV; sh = 0.65;
     } else {
-      dist = CAM_FOOT[mode];
+      dist = CAM_FOOT[mode]; sh = 0.55;
     }
     const bias = veh || aiming ? 0 : CAM_PITCH_BIAS[mode];
 
@@ -393,7 +393,7 @@ export function createPlayer(game) {
     camDir.set(sy * cp, -sp, cy * cp);
 
     // pivot: chest/head height (+ shoulder shift to the right)
-    const pivH = veh ? 1.5 + (veh.height || 1.4) * 0.35 : 1.55;
+    const pivH = veh ? 1.5 + (veh.height || 1.4) * 0.35 : 1.7;
     const px = p.x - cy * shoulder;
     const py = p.y + pivH;
     const pz = p.z + sy * shoulder;
