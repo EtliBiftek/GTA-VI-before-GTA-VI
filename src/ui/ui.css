@@ -20,7 +20,7 @@
   border-radius: calc(var(--u) * .8); box-shadow: 0 0 calc(var(--u) * 1.2) rgba(255, 61, 154, .25), inset 0 0 calc(var(--u) * .8) rgba(53, 224, 255, .08);
   backdrop-filter: blur(3px); }
 
-.nc-tr { top: calc(var(--st) + var(--u) * .8); right: calc(var(--sr) + var(--u) * 1.2); width: calc(var(--u) * 19); display: flex; flex-direction: column; gap: calc(var(--u) * .45); align-items: stretch; }
+.nc-tr { top: calc(var(--st) + var(--u) * .8); right: calc(var(--sr) + var(--u) * 1.2); width: calc(var(--u) * 21); display: flex; flex-direction: column; gap: calc(var(--u) * .45); align-items: stretch; }
 .nc-row1 { display: flex; justify-content: space-between; align-items: baseline; padding: calc(var(--u) * .35) calc(var(--u) * .9); }
 .nc-clock { font-size: calc(var(--u) * 1.5); color: var(--cyan); text-shadow: 0 0 .6em rgba(53, 224, 255, .7); font-variant-numeric: tabular-nums; }
 .nc-money { position: relative; font-size: calc(var(--u) * 2); color: var(--green); text-shadow: 0 0 .5em rgba(93, 255, 160, .55); font-variant-numeric: tabular-nums; transition: color .2s; }
@@ -37,8 +37,9 @@
 @keyframes nc-blink { 0% { opacity: 1; } 100% { opacity: .15; } }
 
 .nc-weapon { padding: calc(var(--u) * .4) calc(var(--u) * .9); display: flex; justify-content: space-between; align-items: baseline; gap: .5em; }
-.nc-wname { font-size: calc(var(--u) * 1.25); color: var(--orange); }
+.nc-wname { font-size: calc(var(--u) * 1.15); color: var(--orange); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .nc-wammo { font-size: calc(var(--u) * 1.6); font-variant-numeric: tabular-nums; text-shadow: 0 0 .5em rgba(255, 255, 255, .35); }
+.nc-wammo { white-space: nowrap; flex: 0 0 auto; }
 .nc-wammo small { font-size: .7em; opacity: .65; }
 .nc-bars { display: flex; flex-direction: column; gap: calc(var(--u) * .3); padding: calc(var(--u) * .5) calc(var(--u) * .7); }
 .nc-bar { position: relative; height: calc(var(--u) * 1.1); background: rgba(0, 0, 0, .5); border-radius: 99px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); }
