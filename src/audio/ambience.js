@@ -1,11 +1,13 @@
 // Neon Coast audio - Istanbul ambience: traffic bed by time of day, waves + gulls + ferries near water,
-// tram bells in Beyoğlu, pedestrian babble, wind, night crickets and distant dogs. All synthesised.
+// tram bells in Beyoğlu, pedestrian babble, wind, night crickets and distant dogs. Synthesised; recorded loops (street traffic,
+// waves, wind, crickets) are layered in once decoded and the synth beds duck to a supporting level (samples.js). Crowd babble and
+// dogs stay synthesised (no safe recordings: speech must not be intelligible).
 import { loopNoise, setT, rnd } from './synth.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const TAU = Math.PI * 2;
 
-export function createAmbience(mx, game, noise) {
+export function createAmbience(mx, game, noise, samples = null) {
   const ctx = mx.ctx;
   const G = (v = 0) => { const g = ctx.createGain(); g.gain.value = v; return g; };
   const bq = (type, f, q = 1) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
@@ -50,6 +52,14 @@ export function createAmbience(mx, game, noise) {
   const l2 = ctx.createOscillator(); l2.frequency.value = 2.4; l2.type = 'square'; const l2g = G(0.5); l2.connect(l2g); l2g.connect(cricB.gain);
   cric.connect(cricA); cricA.connect(cricB); cricB.connect(cricOut); cricOut.connect(out);
   cric.start(); l1.start(); l2.start();
+
+  // ---- recorded beds (optional). Levels follow exactly the same envelopes as the synth beds.
+  const wavePanDest = wavePan || out;
+  const SL = samples ? {
+    traffic: samples.loop('ambience/traffic', out), waves: samples.loop('ambience/waves', wavePanDest),
+    wind: samples.loop('ambience/wind', out), crickets: samples.loop('ambience/crickets', out),
+  } : null;
+  const K = { traffic: 0.6, waves: 0.6, wind: 0.6, crickets: 0.6, synthKeep: 0.3 };   // sample level multipliers / synth level when a sample is live
 
   const S = { water: 0, dist: 400, dx: 0, dz: 0, hasDir: false, scanT: 0, peds: 0, pedT: 0, level: 0,
     tGull: 6, tFerry: 25, tBoat: 40, tTram: 20, tBark: 40, tHorn: 12, tLap: 1, district: '', distT: 0, amb: 0 };
@@ -97,6 +107,7 @@ export function createAmbience(mx, game, noise) {
     const menu = F.mode === 'menu';
     if (!p || menu) {
       for (const g of [rumbleG, hissG, waveG, windG, cricOut]) setT(g.gain, 0, now, 0.3);
+      if (SL) for (const l of Object.values(SL)) l.setGain(0, now, 0.3);
       for (const b of babble) setT(b.g.gain, 0, now, 0.3);
       return;
     }
@@ -126,14 +137,23 @@ export function createAmbience(mx, game, noise) {
     const w = S.water;
 
     // beds
-    setT(rumbleG.gain, 0.2 * (0.4 + 0.6 * day) * (1 - 0.5 * w) * cabin, now, 0.6);
-    setT(hissG.gain, 0.09 * day * (1 - 0.6 * w) * cabin, now, 0.6);
+    const kT = SL && SL.traffic.ready ? K.synthKeep : 1, kW = SL && SL.waves.ready ? K.synthKeep : 1;
+    const kD = SL && SL.wind.ready ? K.synthKeep : 1, kC = SL && SL.crickets.ready ? K.synthKeep : 1;
+    setT(rumbleG.gain, 0.2 * (0.4 + 0.6 * day) * (1 - 0.5 * w) * cabin * kT, now, 0.6);
+    setT(hissG.gain, 0.09 * day * (1 - 0.6 * w) * cabin * kT, now, 0.6);
+    if (SL) SL.traffic.setGain(K.traffic * (0.4 + 0.6 * day) * (1 - 0.5 * w) * cabin, now, 0.6);
     setT(hissBP.frequency, 700 + 400 * day, now, 1);
     const near = clamp(1 - S.dist / 90, 0, 1);
-    setT(waveG.gain, (0.03 + 0.34 * w) * (0.6 + 0.4 * near) * cabin, now, 0.5);
+    setT(waveG.gain, (0.03 + 0.34 * w) * (0.6 + 0.4 * near) * cabin * kW, now, 0.5);
+    if (SL) {
+      SL.waves.setGain(K.waves * (0.03 + 0.34 * w) * (0.6 + 0.4 * near) * cabin, now, 0.5);
+      SL.waves.setRate(1 + 0.04 * near, now, 1);
+    }
     setT(waveLP.frequency, 500 + 900 * near, now, 0.5);
     if (wavePan) setT(wavePan.pan, S.hasDir ? clamp((S.dx * mx.listener.rx + S.dz * mx.listener.rz) * 0.8, -0.8, 0.8) : 0, now, 0.4);
-    setT(windG.gain, (0.04 + 0.05 * w + 0.03 * (night ? 0 : 0.5)) * cabin * (F.speed > 20 ? 0.5 : 1), now, 0.8);
+    const windLvl = (0.04 + 0.05 * w + 0.03 * (night ? 0 : 0.5)) * cabin * (F.speed > 20 ? 0.5 : 1);
+    setT(windG.gain, windLvl * kD, now, 0.8);
+    if (SL) SL.wind.setGain(K.wind * windLvl, now, 0.8);
     setT(windBP.frequency, 350 + 250 * w, now, 1);
     // crowd
     const crowd = Math.pow(clamp(S.peds / 9, 0, 1), 0.7) * 0.075 * cabin * (0.5 + 0.5 * day);
@@ -149,7 +169,9 @@ export function createAmbience(mx, game, noise) {
       setT(b.g.gain, crowd, now, 0.4);
     }
     // crickets
-    setT(cricOut.gain, night ? 0.018 * (1 - w * 0.8) * (1 - clamp(F.speed / 10, 0, 1) * 0.8) * cabin : 0, now, 1.2);
+    const cricLvl = night ? 0.018 * (1 - w * 0.8) * (1 - clamp(F.speed / 10, 0, 1) * 0.8) * cabin : 0;
+    setT(cricOut.gain, cricLvl * kC, now, 1.2);
+    if (SL) SL.crickets.setGain(K.crickets * cricLvl, now, 1.2);
 
     // ---- scheduled one-shots
     if (!F.playing) return;

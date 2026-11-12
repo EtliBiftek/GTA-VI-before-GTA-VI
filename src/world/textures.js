@@ -567,5 +567,5 @@ export function makeWaterNormal(t) {
     const g = Math.min(255, h * 180), i = (y * S + x) * 4; im.data[i] = im.data[i + 1] = im.data[i + 2] = g; im.data[i + 3] = 255;
   }
   hg.putImageData(im, 0, 0);
-  const wn = tex(normalFrom(hc, 6), {}); upgradeWaterNormal(wn, t, 1); return wn;
+  const wn = tex(normalFrom(hc, 6), {}); upgradeWaterNormal(wn, t, 4); return wn;
 }

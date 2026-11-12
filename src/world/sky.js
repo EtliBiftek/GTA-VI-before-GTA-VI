@@ -6,18 +6,18 @@ import { makeWaterNormal, TIER } from './textures.js';
 
 const K = (t, top, hor, sun, sunI, hemiS, hemiG, hemiI, moonI, night, water) => ({ t, top, hor, sun, sunI, hemiS, hemiG, hemiI, moonI, night, water });
 const KEYS = [
-  K(0, 0x050a24, 0x16204a, 0x7080ff, 0, 0x3a4a8a, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
-  K(4.5, 0x070c2a, 0x1b2552, 0x7080ff, 0, 0x3a4a8a, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
-  K(5.75, 0x23336e, 0xe07a8a, 0xff9a80, 0, 0x6a6aa0, 0x2a2438, 0.6, 0.3, 0.7, 0x2a3a6a),
+  K(0, 0x050a24, 0x16204a, 0x7080ff, 0, 0x404a6c, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
+  K(4.5, 0x070c2a, 0x1b2552, 0x7080ff, 0, 0x404a6c, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
+  K(5.75, 0x2b3b78, 0xe0907c, 0xffa88a, 0, 0x7a78a8, 0x2a2838, 0.6, 0.3, 0.7, 0x2a3a6a),
   K(6.75, 0x4a78c8, 0xffb98a, 0xffc890, 1.2, 0x9db4e0, 0x6a5a50, 0.8, 0, 0.1, 0x2f8ab0),
   K(9, 0x3a82e0, 0xb4d8f0, 0xfff2dc, 2.6, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x1b739c),
   K(13, 0x2d78dc, 0xa8d4f4, 0xfffbf0, 2.9, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x18709d),
   K(16.5, 0x3a7fd6, 0xb8d6ee, 0xfff0d0, 2.6, 0xbcd8ff, 0x8a8272, 1.0, 0, 0, 0x1b739c),
-  K(17.75, 0x5068c8, 0xffc08a, 0xffa860, 1.9, 0xd8b8c0, 0x7a5a58, 0.85, 0, 0.05, 0x2a86b0),
-  K(18.6, 0x3a3a9a, 0xff6a9e, 0xff6a50, 1.0, 0xc67aaa, 0x4a3050, 0.7, 0.1, 0.6, 0x6a4a9a),
-  K(19.5, 0x1c1a5c, 0xb0489a, 0xd0407a, 0.2, 0x7a5aa0, 0x2a2040, 0.6, 0.3, 0.95, 0x3a2a6a),
-  K(21, 0x080c34, 0x2a2260, 0x7080ff, 0, 0x3a4a8a, 0x141626, 0.6, 0.45, 1, 0x0f1f50),
-  K(24, 0x050a24, 0x16204a, 0x7080ff, 0, 0x3a4a8a, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
+  K(17.75, 0x4a68b8, 0xffc088, 0xffa860, 1.9, 0xe2c4a2, 0x7a5a50, 0.85, 0, 0.05, 0x2a86b0),
+  K(18.6, 0x3d4a96, 0xff9858, 0xffa064, 1.1, 0xd8b090, 0x4a3e40, 0.8, 0.1, 0.6, 0x5a5a8a),
+  K(19.5, 0x1e2260, 0xc4685c, 0xd45e48, 0.2, 0x7a6a98, 0x2a2838, 0.6, 0.3, 0.95, 0x35406a),
+  K(21, 0x0a1032, 0x252a58, 0x7080ff, 0, 0x404a6c, 0x141626, 0.6, 0.45, 1, 0x0f1f50),
+  K(24, 0x050a24, 0x16204a, 0x7080ff, 0, 0x404a6c, 0x141626, 0.6, 0.45, 1, 0x0b1f45),
 ].map((k) => { for (const f of ['top', 'hor', 'sun', 'hemiS', 'hemiG', 'water']) k[f] = new THREE.Color(k[f]); return k; });
 
 const sm = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -99,7 +99,7 @@ export function createSky(game, onEnv, waterGeo, shore) {
 
   // ---- lights ----
   const sun = new THREE.DirectionalLight(0xffffff, 2.5);
-  const moonLight = new THREE.DirectionalLight(0x8fa8ff, 0.3);
+  const moonLight = new THREE.DirectionalLight(0xa8b4d8, 0.3);
   const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x8a8272, 1);
   const SHADOW_R = 70, SHADOW_MAP = 2048;
   sun.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
@@ -183,11 +183,11 @@ export function createSky(game, onEnv, waterGeo, shore) {
     moonLight.target.position.copy(target); moonLight.position.copy(target).addScaledVector(tmp, 200);
     hemi.color.copy(cur.hemiS); hemi.groundColor.copy(cur.hemiG); hemi.intensity = cur.hemiI + cur.night * 2.2;
     // fog matches the dome's horizon colour (incl. the sun-side haze in the view direction)
-    const dd = q.drawDistance * (st.mode === 'menu' ? 1.8 : 1);
+    const menu = st.mode === 'menu', dd = q.drawDistance * (menu ? 2.1 : 1); // menu fly-around: push the haze out so the city stays crisp
     game.camera.getWorldDirection(fwd); fwd.y = 0; if (fwd.lengthSq() > 1e-6) fwd.normalize();
     const s = Math.max(fwd.dot(sunDir), 0), mie = (Math.pow(s, 6) * 0.45 + s * s * 0.08) * U.sunVis.value;
     fogC.setRGB(cur.hor.r + cur.sun.r * mie, cur.hor.g + cur.sun.g * mie, cur.hor.b + cur.sun.b * mie);
-    scene.fog.color.copy(fogC); scene.fog.near = dd * 0.4; scene.fog.far = dd * 1.25;
+    scene.fog.color.copy(fogC); scene.fog.near = dd * (menu ? 0.62 : 0.4); scene.fog.far = dd * 1.25;
     // water
     waterMat.color.copy(cur.water); waterUni.uTime.value = clock;
     waterUni.uShallow.value.setRGB(0.32, 0.9, 0.8).multiplyScalar(0.35 + 0.65 * (1 - nightF)).lerp(cur.water, nightF * 0.6);

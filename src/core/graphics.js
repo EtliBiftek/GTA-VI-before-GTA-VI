@@ -154,7 +154,7 @@ export function createGraphics(game) {
         u.uTime.value = (now * 0.001) % 100;
         u.uVignette.value = 0.2 + 0.12 * night;
         u.uSat.value = 1.06 - 0.04 * night;
-        u.uCool.value.setRGB(0.97 - 0.02 * night, 1.0, 1.04 + 0.04 * night);
+        u.uCool.value.setRGB(0.975 - 0.005 * night, 1.0, 1.035 - 0.015 * night); // neutral night shadows (was strongly blue)
         u.uWarm.value.setRGB(1.04, 1.0, 0.95 + 0.03 * night);
         updateSunUV(night);
       }

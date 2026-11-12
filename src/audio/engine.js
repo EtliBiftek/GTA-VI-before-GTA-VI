@@ -1,5 +1,7 @@
 // Neon Coast audio - vehicle layers: player engine (gear/RPM model), tyres, wind, skid,
 // nearby AI traffic pass-bys (with Doppler), police sirens and burning-car fire bed.
+// Recorded loops (engine low/high layers pitched by the RPM model, tyre-squeal, siren wail/yelp) are layered over / replace the
+// synth voices once decoded (samples.js); until then everything below runs on the synth alone.
 import { harmonicWave, loopNoise, setT, rnd } from './synth.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -28,7 +30,7 @@ function gearFor(speed, vmax) {
   return 4;
 }
 
-export function createVehicleAudio(mx, game, noise) {
+export function createVehicleAudio(mx, game, noise, samples = null) {
   const ctx = mx.ctx;
   const G = (v = 0) => { const g = ctx.createGain(); g.gain.value = v; return g; };
   const bq = (type, f, q = 1) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
@@ -84,6 +86,14 @@ export function createVehicleAudio(mx, game, noise) {
   eng.sq.connect(eng.sqBP); eng.sqBP.connect(eng.sqG); eng.sqG.connect(eng.out);
   for (const n of [eng.oscA, eng.oscB, eng.sub, eng.lfo, eng.clatLfo, eng.sq, eng.sqLfo]) n.start();
 
+  // recorded engine layers (low + high, crossfaded by firing frequency and pitched by it) and tyre squeal
+  const SL = samples ? {
+    low: samples.loop('vehicles/engine_low', eng.inCar), high: samples.loop('vehicles/engine_high', eng.inCar),
+    skid: samples.loop('vehicles/skid_loop', eng.out),
+  } : null;
+  const ENG_K = 3.0, SKID_K = 0.5;                 // sample level relative to the synth engine / skid gains (tuned with the offline harness)
+  const smooth01 = (x) => { const c = clamp(x, 0, 1); return c * c * (3 - 2 * c); };
+
   const st = { gear: 0, rpm: 850, load: 0, shiftT: 0, charKey: '', burbleT: 0, lastLoad: 0, vol: 0, slip: 0, hadVeh: false };
 
   function updateEngine(F) {
@@ -92,6 +102,7 @@ export function createVehicleAudio(mx, game, noise) {
     if (!veh) {
       for (const g of [eng.engGain, eng.intakeG, eng.clatG, eng.tyreG, eng.windG, eng.skidG, eng.sqG]) setT(g.gain, 0, now, 0.08);
       setT(eng.clatDepth.gain, 0, now, 0.08);
+      if (SL) for (const l of [SL.low, SL.high, SL.skid]) l.setGain(0, now, 0.08);
       st.hadVeh = false;
       return;
     }
@@ -132,7 +143,13 @@ export function createVehicleAudio(mx, game, noise) {
     setT(eng.lfoG.gain, 0.08 * idleness + 0.01, now, 0.1);
     const shiftCut = st.shiftT > 0.1 ? 0.45 : 1;
     const vol = (0.11 + 0.13 * st.load + 0.05 * rr) * ch.vol * shiftCut * (st.load < 0.05 && rr > 0.3 ? 0.75 : 1);
-    setT(eng.engGain.gain, vol, now, 0.04);
+    const sampled = !!(SL && SL.low.ready && SL.high.ready);
+    setT(eng.engGain.gain, vol * (sampled ? 0.5 : 1), now, 0.04);
+    if (sampled) {
+      const hi = smooth01((f - 55) / 45);
+      SL.low.setRate(clamp(f / 43.4, 0.55, 2.0), now, 0.03); SL.high.setRate(clamp(f / 76.6, 0.7, 2.7), now, 0.03);
+      SL.low.setGain(vol * ENG_K * (1 - hi), now, 0.05); SL.high.setGain(vol * ENG_K * hi, now, 0.05);
+    }
     setT(eng.preGain.gain, 0.8 + st.load * 0.8, now, 0.08);
     setT(eng.mixS.gain, ch.diesel > 0.5 ? 0.7 : 0.4, now, 0.2);
     // intake, diesel clatter
@@ -169,9 +186,11 @@ export function createVehicleAudio(mx, game, noise) {
     if (ch.wave === 2 && gas > 0.9 && sp < 7 && sp > 0.5) slip = Math.max(slip, 0.3);
     st.slip += (slip - st.slip) * damp(slip > st.slip ? 18 : 7, dt);
     const sv = st.slip * clamp(sp / 10, 0.2, 1);
-    setT(eng.skidG.gain, sv * 0.14, now, 0.04);
+    const skidSampled = !!(SL && SL.skid.ready);
+    setT(eng.skidG.gain, sv * (skidSampled ? 0.05 : 0.14), now, 0.04);
+    if (skidSampled) { SL.skid.setGain(sv * SKID_K, now, 0.04); SL.skid.setRate(0.8 + sp * 0.012 + lat * 0.008, now, 0.1); }
     setT(eng.skidBP.frequency, 1500 + sp * 25, now, 0.1);
-    setT(eng.sqG.gain, sv > 0.3 ? (sv - 0.3) * 0.09 : 0, now, 0.05);
+    setT(eng.sqG.gain, sv > 0.3 ? (sv - 0.3) * (skidSampled ? 0.03 : 0.09) : 0, now, 0.05);
     setT(eng.sq.frequency, 850 + sp * 12 + lat * 20, now, 0.1);
     st.hadVeh = true;
   }
@@ -261,15 +280,18 @@ export function createVehicleAudio(mx, game, noise) {
     const s = { veh: null, off: i * 1.7 };
     s.osc = ctx.createOscillator(); if (sirenWave) s.osc.setPeriodicWave(sirenWave); else s.osc.type = 'sawtooth';
     s.osc.frequency.value = 700;
+    s.og = G(1);
     s.hp = bq('highpass', 450, 0.7); s.lp = bq('lowpass', 3500, 0.7); s.gain = G(0);
     s.pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     s.send = G(0.3);
-    s.osc.connect(s.hp); s.hp.connect(s.lp); s.lp.connect(s.gain);
+    s.osc.connect(s.og); s.og.connect(s.hp); s.hp.connect(s.lp); s.lp.connect(s.gain);
+    if (samples) { s.wail = samples.loop('vehicles/siren_wail', s.lp); s.yelp = samples.loop('vehicles/siren_yelp', s.lp); }
     if (s.pan) { s.gain.connect(s.pan); s.pan.connect(mx.buses.veh); s.pan.connect(s.send); } else { s.gain.connect(mx.buses.veh); s.gain.connect(s.send); }
     s.send.connect(mx.revIn);
     s.osc.start();
     sirens.push(s);
   }
+  const SIREN_K = 1.0;
   let sirenClock = 0, sirenScanT = 0;
   const sirenCands = [];
   function sirenFreq(t) {
@@ -312,6 +334,12 @@ export function createVehicleAudio(mx, game, noise) {
       const vrad = d > 1 ? ((v.vx || 0) * sp.dx + (v.vz || 0) * sp.dz) / d : 0;
       const dop = clamp(SOUND_C / (SOUND_C + vrad * 1.8), 0.85, 1.18);
       setT(s.osc.frequency, sirenFreq(sirenClock + s.off) * dop, now, 0.012);
+      if (s.wail && s.wail.ready && s.yelp.ready) {
+        const yelp = ((sirenClock + s.off) % 18) >= 9;
+        setT(s.og.gain, 0.06, now, 0.2);
+        s.wail.setGain(yelp ? 0 : SIREN_K, now, 0.2); s.yelp.setGain(yelp ? SIREN_K : 0, now, 0.2);
+        s.wail.setRate(dop, now, 0.03); s.yelp.setRate(dop, now, 0.03);
+      } else setT(s.og.gain, 1, now, 0.2);
       setT(s.gain.gain, mx.attenuation(d, 240, 12) * 0.34, now, 0.1);
       setT(s.lp.frequency, clamp(500 + 3600 * Math.exp(-d / 110), 500, 3600), now, 0.12);
       if (s.pan) setT(s.pan.pan, sp.pan, now, 0.08);

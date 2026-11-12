@@ -1,6 +1,9 @@
 // Neon Coast - procedural WebAudio engine. Contract: docs/ARCHITECTURE.md (Audio section).
-// createAudio(game) -> { init, update(dt), play(name, opts) }. No audio files, no network.
+// createAudio(game) -> { init, update(dt), play(name, opts) }. Every sound has a synthesised recipe; recorded samples
+// (public/assets/audio, see samples.js + CREDITS.md) are fetched lazily after the first gesture and take over per sound once
+// decoded - until then (or forever, if a file is missing) the synth recipe plays. No other network use.
 //   synth.js     low-level synthesis helpers (noise, tone, FM, Karplus-Strong)
+//   samples.js   recorded-sample manifest, lazy fetch/decode, one-shot + loop players (synth fallback)
 //   mixer.js     buses, reverb, compressor/limiter, spatial voices, ducking
 //   sfx.js       one-shot recipes (weapons, impacts, vehicles, character, UI stingers)
 //   engine.js    player engine + tyres/wind/skid, AI traffic pass-bys, sirens, fire
@@ -9,6 +12,7 @@
 //   character.js footsteps, jump/land, heartbeat, reload/empty/melee detection
 import { makeNoise, rnd } from './synth.js';
 import { createMixer } from './mixer.js';
+import { createSamples } from './samples.js';
 import { SOUNDS, WEAPON_SOUND } from './sfx.js';
 import { createVehicleAudio } from './engine.js';
 import { createAmbience } from './ambience.js';
@@ -16,11 +20,12 @@ import { createMusic } from './music.js';
 import { createCharacter } from './character.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const PITCH_FROM = { horn: 400, gull: 1700 };   // synth `base` frequency option -> sample playback rate
 const warn = (() => { let n = 0; return (e) => { if (n++ < 5) console.warn('[audio]', e); }; })();
 
 export function createAudio(game, opts = {}) {
   let ctx = null, mixer = null, noise = null, dead = false;
-  let veh = null, amb = null, music = null, chr = null;
+  let veh = null, amb = null, music = null, chr = null, samples = null;
   const st = { radio: 0, inVehPrev: false };
   const pending = [];                  // delayed actions [{t, fn}] advanced in update()
   const gate = new Map();
@@ -44,10 +49,12 @@ export function createAudio(game, opts = {}) {
       noise = makeNoise(ctx);
       mixer = createMixer(ctx, game);
       const tryMake = (fn) => { try { return fn(); } catch (e) { warn(e); return null; } };
-      veh = tryMake(() => createVehicleAudio(mixer, game, noise));
-      amb = tryMake(() => createAmbience(mixer, game, noise));
+      samples = tryMake(() => createSamples(ctx, { base: opts.sampleBase, enabled: opts.samples !== false }));
+      veh = tryMake(() => createVehicleAudio(mixer, game, noise, samples));
+      amb = tryMake(() => createAmbience(mixer, game, noise, samples));
       music = tryMake(() => createMusic(mixer, game, noise));
       chr = tryMake(() => createCharacter(game));
+      if (samples && !opts.manualPreload) samples.preload();          // core one-shots first, then loops; never blocks or throws
     } catch (e) { warn(e); dead = true; ctx = null; }
   }
   const onGesture = () => {
@@ -69,12 +76,22 @@ export function createAudio(game, opts = {}) {
       const def = SOUNDS[name];
       if (!def) return;
       if ((opts.x != null && !Number.isFinite(opts.x)) || (opts.z != null && !Number.isFinite(opts.z))) return;
+      // recorded sample (if decoded) replaces the recipe, or sits under a reduced-level copy of it (entry.synth)
+      const sm = samples ? samples.pick(name) : null;
+      const sp = (opts.pitch ?? 1) * (PITCH_FROM[name] && opts.base ? clamp(opts.base / PITCH_FROM[name], 0.8, 1.25) / (opts.pitch ?? 1) : 1);
+      const dur = sm ? Math.max(def.dur, sm.buf.duration / Math.max(0.4, sm.rate * sp) + 0.1) : def.dur;
       const v = mixer.voice({
         x: opts.x, z: opts.z, pan: opts.pan, vol: (opts.volume ?? 1) * (def.gain ?? 0.7), wet: def.wet,
-        bus: opts.bus || def.bus, maxDist: def.maxDist, ref: def.ref, dur: def.dur, speedOfSound: def.sos,
+        bus: opts.bus || def.bus, maxDist: def.maxDist, ref: def.ref, dur, speedOfSound: def.sos,
       });
       if (!v) return;
-      def.build({ ctx, out: v.input, t: v.t, p: opts.pitch ?? 1, noise }, opts);
+      let layer = 1;
+      if (sm) { samples.playOn(sm, v.input, v.t, { pitch: sp }); layer = sm.entry.synth ?? 0; }
+      if (layer > 0.001) {
+        let out = v.input;
+        if (layer < 0.999) { out = v.track(ctx.createGain()); out.gain.value = layer; out.connect(v.input); }
+        def.build({ ctx, out, t: v.t, p: opts.pitch ?? 1, noise }, opts);
+      }
       if (def.duck) mixer.duck(def.duck * (opts.x != null ? clamp(1 - v.dist / 200, 0.2, 1) : 1), 0.6);
     } catch (e) { warn(e); }
   }
@@ -152,7 +169,9 @@ export function createAudio(game, opts = {}) {
       }
     });
     on('explosion', (d) => {
-      play('explosion', { x: d.x, z: d.z, pitch: rnd(0.9, 1.08) });
+      const dist = dToPlayer(d.x, d.z);
+      play(dist > 150 ? 'explosionFar' : 'explosion', { x: d.x, z: d.z, pitch: rnd(0.9, 1.08) });
+      if (dist > 45 && dist <= 150 && ok('expTail', 400)) after(0.35 + dist / 343, () => play('explosionFar', { x: d.x, z: d.z, volume: 0.45, pitch: rnd(0.9, 1.05) }));   // rolling echo off the buildings
       mixer.duck(0.8, 1.2);
     });
     on('vehicle:crash', (d) => {
@@ -226,6 +245,6 @@ export function createAudio(game, opts = {}) {
     play,
 
     /** Debug/test hook (not used by the game). */
-    _debug() { return { ensure: ensureCtx, ctx, mixer, veh, amb, music, chr, noise, st, SOUNDS }; },
+    _debug() { return { ensure: ensureCtx, ctx, mixer, veh, amb, music, chr, noise, st, SOUNDS, samples }; },
   };
 }

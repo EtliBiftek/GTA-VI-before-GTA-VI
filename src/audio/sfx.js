@@ -129,6 +129,11 @@ export const SOUNDS = {
       if (i % 3 === 0) metalClank(cc, 500, 2, 0.1);
     }
   } },
+  explosionFar: { dur: 4.2, gain: 1, ref: 70, maxDist: 700, wet: 0.55, sos: 1, build: (c) => {
+    // distant blast: only the low rumble survives the distance
+    noiseHit(c, 2.8, 0.55, { type: 'lowpass', f: 600, f2: 70, q: 0.6 }, 0.06, 'brown');
+    tone(c, 'sine', 64, 24, 2.6, 0.7, { atk: 0.012 });
+  } },
   crash: { dur: 1.2, gain: 0.8, wet: 0.25, maxDist: 220, build: (c, o) => {
     const k = o.k ?? 0.5;
     noiseHit(c, 0.25 + k * 0.4, 0.7, { type: 'bandpass', f: 700 + k * 300, f2: 200, q: 0.7 }, 0.001, 'pink');

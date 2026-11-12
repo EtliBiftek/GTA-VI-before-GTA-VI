@@ -122,7 +122,7 @@ export function createMixer(ctx, game) {
   }
   /**
    * Create a one-shot output chain. opts {x,z,vol,wet,bus,maxDist,pan,dur,tOffset}.
-   * Returns { input, t, level, dist } or null when inaudible / voice cap rejects it.
+   * Returns { input, t, level, dist, pan, track(node) } or null when inaudible / voice cap rejects it.
    */
   function voice(opts) {
     const now = ctx.currentTime;
@@ -166,7 +166,7 @@ export function createMixer(ctx, game) {
     const delay = positional && opts.speedOfSound ? Math.min(0.6, d / 343) : 0;
     const v = { input, nodes, level: vol, end: now + (opts.dur ?? 1) + delay + 0.15 };
     voices.push(v);
-    return { input, t: now + 0.006 + delay, level: vol, dist: d, pan };
+    return { input, t: now + 0.006 + delay, level: vol, dist: d, pan, track: (n) => { nodes.push(n); return n; } };
   }
   const dying = [];
 

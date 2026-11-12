@@ -71,7 +71,6 @@ export function createHdriSky() {
     }
   }
 
-  const _s = new THREE.Vector3();
   /** Configure the blend for the game's sun direction. Returns false if the HDRIs are not (all) available. */
   function setup(sunDir, night) {
     if (failed || loaded < SKIES.length) return false;
@@ -81,12 +80,11 @@ export function createHdriSky() {
     const k = Math.min(1, Math.max(0, (s - a.s) / (b.s - a.s))), m = k * k * (3 - 2 * k);
     const azG = Math.atan2(sunDir.z, sunDir.x), azM = Math.atan2(-sunDir.z, -sunDir.x);
     const rot = (sky, v) => { const d = sky.az - (sky.moon ? azM : azG); v.set(Math.cos(d), Math.sin(d)); };
-    U.tA.value = a.tex; U.tB.value = b.tex; U.uMix.value = m; rot(a, U.uRotA); rot(b, U.uRotB);
+    U.tA.value = a.tex; U.tB.value = b.tex; U.uMix.value = m; rot(a, U.uRotA.value); rot(b, U.uRotB.value);
     // neutral night reflections (the night sky is deep blue; the city lighting adds its own colour), restrained sunset
-    U.uSat.value = 0.62 + 0.38 * (1 - night) * (1 - 0.0);
+    U.uSat.value = 0.62 + 0.38 * (1 - night);
     U.uTint.value.setRGB(1 + 0.04 * night, 1, 1 - 0.05 * night);
-    U.uGain.value = 1 + 0.25 * night;
-    void _s;
+    U.uGain.value = 1 - 0.2 * night;
     return true;
   }
   return { load, mesh, setup, get ready() { return !failed && loaded >= SKIES.length; } };

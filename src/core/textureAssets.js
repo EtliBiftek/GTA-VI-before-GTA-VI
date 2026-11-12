@@ -102,7 +102,7 @@ const FAC = { // facade kind -> detail material, strength, normal strength
 export function patchFacade(mat, kind, tier, aniso, repW, repH) {
   const cfg = FAC[kind]; if (!cfg || !mat) return;
   const d = detail(cfg.id, tier, aniso), real = REAL[cfg.id];
-  const u = { uDtA: { value: d.map }, uDtN: { value: d.normal }, uDtRep: { value: new THREE.Vector2(repW / real, repH / real) }, uDtAmt: d.ready, uDtAmtK: { value: cfg.amt }, uDtNS: { value: cfg.ns } };
+  const u = { uDtA: { value: d.map }, uDtN: { value: d.normal }, uDtRep: { value: new THREE.Vector2(repW / real, repH / real) }, uDtAmt: d.ready, uDtAmtK: { value: cfg.amt * (tier === 0 ? 0.65 : 1) }, uDtNS: { value: cfg.ns } };
   const prev = mat.onBeforeCompile, withN = !!d.normal && !!mat.normalMap;
   mat.onBeforeCompile = (sh, r) => {
     prev?.call(mat, sh, r);
