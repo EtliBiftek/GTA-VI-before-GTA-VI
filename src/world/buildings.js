@@ -252,9 +252,12 @@ export function makeKit(ctx) {
     B.solid.box(rect.minX - 0.05, 0, rect.minZ - 0.05, rect.maxX + 0.05, 0.4, rect.maxZ + 0.05, C(0x6e7279));
     addCollider(rect.minX, rect.maxX, rect.minZ, rect.maxZ, H, true); return H;
   }
+  // Containers are collected here and drawn by city.js as instanced meshes (procedural boxes, swapped for the downloaded
+  // CC0 container models once loaded). Same random draws as before, so the world layout is unchanged.
+  const containerList = [];
   function container(x, z, alongZ, nMax = 3) {
-    const B = CB(x, z), hx = alongZ ? 1.3 : 6.1, hz = alongZ ? 6.1 : 1.3, n = 1 + Math.floor(rand() * nMax), col = C(rpick(BOXES));
-    for (let k = 0; k < n; k++) B.solid.box(x - hx, k * 2.6, z - hz, x + hx, (k + 1) * 2.6 - 0.05, z + hz, shade(col, 0.85 + rand() * 0.3));
+    const hx = alongZ ? 1.3 : 6.1, hz = alongZ ? 6.1 : 1.3, n = 1 + Math.floor(rand() * nMax), col = C(rpick(BOXES));
+    for (let k = 0; k < n; k++) containerList.push({ x, y: k * 2.6, z, rot: alongZ ? 0 : Math.PI / 2, col: shade(col, 0.85 + rand() * 0.3) });
     addCollider(x - hx, x + hx, z - hz, z + hz, n * 2.6, true);
   }
   /** Turkish flag on a pole (two-sided, red field + white crescent) facing direction (fx, fz) */
@@ -268,5 +271,5 @@ export function makeKit(ctx) {
     disc(0.1 + w * 0.36, hh / 2, hh * 0.3, WH, 0.012); disc(0.1 + w * 0.36 + hh * 0.07, hh / 2, hh * 0.24, RED, 0.024);
     S.box(x - 0.1, h, z - 0.1, x + 0.1, h + 0.2, z + 0.1, C(0xffd23a));
   }
-  return { facadeBox, parapet, roofProps, hipRoof, gableRoof, bay, cornice, awnings, blades, board, signPost, wallSign, masonry, block, house, yali, tower, warehouse, container, bush, flag, leafCol, roofT, flatT, rectC };
+  return { facadeBox, parapet, roofProps, hipRoof, gableRoof, bay, cornice, awnings, blades, board, signPost, wallSign, masonry, block, house, yali, tower, containerList, warehouse, container, bush, flag, leafCol, roofT, flatT, rectC };
 }

@@ -3,6 +3,7 @@
 // Quality tier t: 0 = low (small, no normal/rough maps), 1 = medium, 2 = high.
 import * as THREE from 'three';
 import { seeded } from '../core/utils.js';
+import { upgradeSet, upgradeWaterNormal } from '../core/textureAssets.js';
 
 export const TIER = (q) => (q === 'low' ? 0 : q === 'medium' ? 1 : 2);
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -127,11 +128,11 @@ export function makeAsphalt(t, aniso) {
   for (let i = 0; i < 9; i++) crack(R() * S, R() * S, R() * 6.28, 18 + Math.floor(R() * 24), (1 + R() * 0.8) * Math.max(0.6, k));
   const out = { map: tex(cc, { srgb: true, aniso }) };
   if (t >= 1) { out.normalMap = tex(normalFrom(hc, 3.2), { aniso }); out.roughnessMap = tex(rc, { aniso }); }
-  return out;
+  return upgradeSet(out, 'asphalt', t, aniso, 16);
 }
 
 /** Paving slabs: 4 x 4 slabs of 1 m per 4 m tile. */
-export function makePavers(t, aniso) {
+export function makePavers(t, aniso, variant = 'slab') {
   const S = [128, 256, 512][t], R = seeded(411), N = makeNoise(411), n = 4, sl = S / n;
   const cc = mk(S, S), cg = cc.getContext('2d'), hc = mk(S, S), hg = hc.getContext('2d'), rc = mk(S, S), rg = rc.getContext('2d');
   const ci = cg.createImageData(S, S), hi = hg.createImageData(S, S), ri = rg.createImageData(S, S);
@@ -154,7 +155,7 @@ export function makePavers(t, aniso) {
   for (let i = 0; i < 24; i++) { cg.fillStyle = 'rgba(70,66,62,0.55)'; cg.beginPath(); cg.arc(R() * S, R() * S, Math.max(0.6, S / 500), 0, 6.3); cg.fill(); }
   const out = { map: tex(cc, { srgb: true, aniso }) };
   if (t >= 1) { out.normalMap = tex(normalFrom(hc, 3.5), { aniso }); out.roughnessMap = tex(rc, { aniso }); }
-  return out;
+  return upgradeSet(out, variant, t, aniso, 4);
 }
 
 /** Grass / dirt, 8 m per tile. Near-white luminance texture to be tinted with vertex colours. */
@@ -179,7 +180,7 @@ export function makeGrass(t, aniso) {
   for (let i = 0; i < 40; i++) { cg.fillStyle = R() < 0.5 ? 'rgba(255,255,255,0.55)' : 'rgba(255,230,120,0.5)'; cg.fillRect(R() * S, R() * S, Math.max(1, S / 256), Math.max(1, S / 256)); } // clover / daisies
   const out = { map: tex(cc, { srgb: true, aniso }) };
   if (t >= 1) out.normalMap = tex(normalFrom(hc, 2.0), { aniso });
-  return out;
+  return upgradeSet(out, 'grass', t, aniso, 8);
 }
 
 /** Sand with wind ripples, 6 m per tile. */
@@ -445,7 +446,7 @@ export function makeRoofTiles(t, aniso) {
     L.p(x, y + rh - Math.max(1, rh * 0.12), cw, Math.max(1, rh * 0.12), { c: 'rgba(0,0,0,0.5)', h: 0.15 }); // overlap shadow
   }
   L.grain(0.12, 9);
-  const m = L.maps({ aniso, normal: 3 }); delete m.emissiveMap; return m;
+  const m = L.maps({ aniso, normal: 3 }); delete m.emissiveMap; return upgradeSet(m, 'roof', t, aniso, 1.8);
 }
 
 /** Vegetation atlas: left half = palm bark (u 0..0.5), right half = frond with leaflets (u 0.5..1). Alpha. */
@@ -566,5 +567,5 @@ export function makeWaterNormal(t) {
     const g = Math.min(255, h * 180), i = (y * S + x) * 4; im.data[i] = im.data[i + 1] = im.data[i + 2] = g; im.data[i + 3] = 255;
   }
   hg.putImageData(im, 0, 0);
-  return tex(normalFrom(hc, 6), {});
+  const wn = tex(normalFrom(hc, 6), {}); upgradeWaterNormal(wn, t, 1); return wn;
 }

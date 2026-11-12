@@ -6,6 +6,9 @@ Everything is original: no names, characters, logos, map layouts or art from any
 
 - Tech: **Three.js** (ES modules) + **Vite**. No physics engine, no external assets — all geometry,
   textures (canvas) and sounds (WebAudio) are procedural.
+- Downloaded CC0 models: `src/core/assets.js` loads `public/assets/models/**.glb` asynchronously (relative URLs, XHR fallback for
+  file://). Everything boots procedural and swaps the downloaded geometry in when ready (vehicles: `vehicleModels.js`, props: `swapAsset`
+  in `world/city.js`). Missing files keep the procedural version. Credits: `CREDITS.md`; converters: `tools/assets/`.
 - Targets: browser, Android (Capacitor WebView, landscape), Windows (Electron).
 - **Mobile performance is a hard requirement**: use `InstancedMesh`/merged geometry, share materials
   and geometries, never allocate per frame in hot paths (reuse temp vectors), pool objects, cull by

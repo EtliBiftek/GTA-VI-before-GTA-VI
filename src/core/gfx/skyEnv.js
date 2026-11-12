@@ -3,11 +3,13 @@
 // time of day has moved noticeably (never per frame). Falls back to RoomEnvironment if anything fails.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createHdriSky } from './hdriSky.js';
 
 export function createSkyEnv(game) {
   const { renderer, scene } = game;
   let pmrem = null, envScene = null, cubeRT = null, cubeCam = null, ground = null, out = null, failed = false, fallback = false;
-  let lastTod = -1, cooldown = 0, ready = false;
+  let lastTod = -1, cooldown = 0, ready = false, procDome = null, usedHdri = false;
+  const hdri = game.settings.quality === 'low' ? null : createHdriSky(); // low keeps the cheap procedural capture only
   const gc = new THREE.Color(), tmp = new THREE.Color();
 
   function setupFallback() {
@@ -26,11 +28,12 @@ export function createSkyEnv(game) {
     cubeRT = new THREE.WebGLCubeRenderTarget(size, { type: THREE.HalfFloatType, generateMipmaps: false });
     cubeCam = new THREE.CubeCamera(0.5, 3000, cubeRT);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(1000, 24, 12), sky.dome.material);
-    dome.frustumCulled = false; dome.renderOrder = -10;
+    dome.frustumCulled = false; dome.renderOrder = -10; procDome = dome;
     ground = new THREE.Mesh(new THREE.CircleGeometry(900, 24).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0x555555, fog: false, toneMapped: false }));
     ground.position.y = -2; ground.renderOrder = -9;
     envScene.add(dome, ground);
+    if (hdri) { envScene.add(hdri.mesh); hdri.load(); }
   }
 
   function capture(sky) {
@@ -42,6 +45,8 @@ export function createSkyEnv(game) {
     tmp.copy(u.hor.value);
     gc.lerp(tmp, 0.22).multiplyScalar(0.9 + 0.5 * (hemi ? Math.min(1, hemi.intensity / 1.2) : 0.5));
     ground.material.color.copy(gc);
+    usedHdri = !!hdri?.setup(sky.sunDir, game.world?.nightFactor ?? 0);
+    procDome.visible = !usedHdri; hdri && (hdri.mesh.visible = usedHdri);
     cubeCam.update(renderer, envScene);
     const next = pmrem.fromCubemap(cubeRT.texture);
     const prev = out;
@@ -53,6 +58,8 @@ export function createSkyEnv(game) {
 
   return {
     get ready() { return ready; },
+    /** true while reflections come from the HDRI skies (false: procedural sky capture) */
+    get hdri() { return usedHdri; },
     /** force a refresh on the next update */
     invalidate() { lastTod = -1; cooldown = 0; },
     update(dt) {
@@ -66,7 +73,8 @@ export function createSkyEnv(game) {
       const night = game.world?.nightFactor ?? 0;
       // sunrise/sunset moves colours fast, deep night barely changes
       const thr = night > 0.95 ? 1.0 : 0.12;
-      if (!ready ? cooldown > 0 : (d < thr || cooldown > 0)) return;
+      const needHdri = !!hdri && hdri.ready && !usedHdri && ready; // HDRIs finished loading after the first procedural capture
+      if (!ready ? cooldown > 0 : ((d < thr && !needHdri) || cooldown > 0)) return;
       try {
         capture(sky);
         lastTod = tod;

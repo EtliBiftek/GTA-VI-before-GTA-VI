@@ -1,6 +1,8 @@
 // Neon Coast - procedural low-poly vehicle models, type stats and shared geometry/material caches.
 // Models face +Z, y up, ground at y = 0. Local +X is the LEFT side (driver side) of the car.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { assets } from '../core/assets.js';
 
 /** Vehicle type stats. accel/brake m/s^2, speeds m/s, grip = lateral friction rate (1/s),
  *  steer = max steering angle (rad) at standstill, damageMul = damage multiplier (lower = tougher). */
@@ -671,6 +673,69 @@ function geoFor(T) {
   typeGeo.set(T.id, g);
   return g;
 }
+// ---------------------------------------------------------------------------------------------
+// Downloaded models (CC0, see CREDITS.md). public/assets/models/vehicles/<type>.glb are produced by tools/assets/build-vehicles.cjs:
+// named meshes paint / trim / glass / light_* with baked vertex colours, already warped to the type's collision box. They replace
+// the procedural body / trim / lights geometry per type once loaded; if a file is missing the procedural model stays.
+const ROLE_OF = { light_head: R_HEAD, light_tail: R_TAIL, light_sign: R_SIGN, light_bar_r: R_BAR_R, light_bar_b: R_BAR_B };
+export const assetTrimMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.12 });
+export const assetWheelMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.1 });
+let assetWheelGeo = null;
+const modelListeners = new Set();
+/** Called after a downloaded vehicle model (or the wheel) was installed: fn(typeId | 'wheel'). */
+export function onVehicleModelsChanged(fn) { modelListeners.add(fn); return () => modelListeners.delete(fn); }
+export function getAssetWheelGeometry() { return assetWheelGeo; }
+const installed = new Set();
+export function hasAssetModel(id) { return installed.has(id); }
+
+function installVehicleAsset(id, gltf) {
+  const T = TYPES[id];
+  if (!T || !gltf) return;
+  const root = gltf.scene.getObjectByName('root');
+  if (!root) return;
+  const mesh = (n) => root.getObjectByName(n);
+  const paint = mesh('paint'), trim = mesh('trim'), glass = mesh('glass');
+  if (!paint || !trim) return;
+  const strip = (geo, keep) => { const g = geo.clone(); for (const k of Object.keys(g.attributes)) if (!keep.includes(k)) g.deleteAttribute(k); return g; };
+  const trimGeo = mergeGeometries([strip(trim.geometry, ['position', 'normal', 'color']), ...(glass ? [strip(glass.geometry, ['position', 'normal', 'color'])] : [])], false);
+  const lightParts = [], roles = [];
+  for (const [n, role] of Object.entries(ROLE_OF)) {
+    const m = mesh(n);
+    if (!m) continue;
+    lightParts.push(strip(m.geometry, ['position', 'normal']));
+    for (let i = 0; i < m.geometry.attributes.position.count; i++) roles.push(role);
+  }
+  const lightsBase = lightParts.length ? mergeGeometries(lightParts, false) : new THREE.BufferGeometry();
+  if (!lightParts.length) { lightsBase.setAttribute('position', new THREE.Float32BufferAttribute([], 3)); lightsBase.setAttribute('normal', new THREE.Float32BufferAttribute([], 3)); lightsBase.setIndex([]); }
+  lightsBase.computeBoundingSphere();
+  const body = strip(paint.geometry, ['position', 'normal', 'color']);
+  body.computeBoundingSphere(); trimGeo.computeBoundingSphere();
+  typeGeo.set(id, { body, trim: trimGeo, lightsBase, roles, variants: new Map(), trimMat: assetTrimMaterial, asset: true });
+  const ex = root.userData || {};
+  if (ex.wheels) T.wheels = ex.wheels.map((w, i) => ({ x: w[0], z: w[1], front: i < 2 }));
+  if (ex.visR) { T.visR = ex.visR; T.visW = ex.visW; }
+  installed.add(id);
+  for (const fn of modelListeners) fn(id);
+}
+function installWheelAsset(gltf) {
+  const g = gltf?.scene.getObjectByName('wheel')?.geometry;
+  if (!g) return;
+  assetWheelGeo = g;
+  for (const fn of modelListeners) fn('wheel');
+}
+// Kick off the downloads at module load; the game keeps running on procedural geometry meanwhile.
+for (const id of Object.keys(TYPES)) assets.load('vehicles/' + id + '.glb').then((g) => g && installVehicleAsset(id, g));
+assets.load('vehicles/wheel.glb').then((g) => g && installWheelAsset(g));
+
+/** Re-point an existing vehicle model (built before the download finished) at the current geometry of its type. */
+export function refreshVehicleModel(model, T, destroyed = false) {
+  const g = geoFor(T);
+  model.bodyMesh.geometry = g.body;
+  model.trimMesh.geometry = g.trim;
+  if (!destroyed) model.trimMesh.material = g.trimMat || trimMaterial;
+  model.lightsMesh.geometry = lightsGeometry(T, false, false, 0, destroyed);
+}
+
 /** Triangle counts per part (debug). */
 export function vehicleTriCounts(T) {
   const g = geoFor(T);
@@ -719,7 +784,7 @@ export function buildVehicleModel(T, color) {
   const body = new THREE.Group();
   group.add(body);
   const bodyMesh = new THREE.Mesh(g.body, bodyMaterial(color));
-  const trimMesh = new THREE.Mesh(g.trim, trimMaterial);
+  const trimMesh = new THREE.Mesh(g.trim, g.trimMat || trimMaterial);
   const lightsMesh = new THREE.Mesh(lightsGeometry(T, false, false, 0), lightsMaterial);
   bodyMesh.castShadow = true;
   bodyMesh.receiveShadow = false;

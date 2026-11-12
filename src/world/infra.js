@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { Batch, C, shade } from './geo.js';
 import { QUAY, SW_EDGE, ROAD_HALF, WATER_Y, HALF } from './layout.js';
 import { tube, boxC, cone } from './shapes.js';
+import { assets } from '../core/assets.js';
 
 export function makeInfra(ctx, kit) {
   const { CB, addCollider, rv, vr, vpick, rand, rpick, props, tier } = ctx;
@@ -238,6 +239,8 @@ export function makeInfra(ctx, kit) {
     const nF = routes.filter((r) => r.kind === 'f').length, nB = routes.filter((r) => r.kind === 'b').length;
     const mf = new THREE.InstancedMesh(hull.build(), mats.boat, Math.max(1, nF)), mb = new THREE.InstancedMesh(boat.build(), mats.boat, Math.max(1, nB));
     mf.count = nF; mb.count = nB; mf.frustumCulled = false; mb.frustumCulled = false; group.add(mf, mb);
+    // downloaded CC0 hulls (Kenney Watercraft Kit) replace the procedural ones when loaded; bow along +X like the procedural boats
+    for (const [mesh, file] of [[mf, 'props/ferry.glb'], [mb, 'props/boat_small.glb']]) assets.load(file).then((g) => { const geo = g?.scene.getObjectByName('mesh')?.geometry; if (geo) mesh.geometry = geo; });
     const dummy = new THREE.Object3D(); let clock = 0;
     const update = (dt) => {
       clock += dt; let fi = 0, bi = 0;
