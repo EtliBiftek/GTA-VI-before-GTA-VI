@@ -467,7 +467,7 @@ function headTail(B, T, L, ctx, o) {
 function sideDetails(B, T, ctx, o) {
   const hw = ctx.hw, x = hw + 0.003;
   // wheel arches
-  for (const s of [1, -1]) for (const wz of o.wheelZ) archU(T, s, x, wz, o.wheelR, o.wheelR * 1.13, o.sill, DARK);
+  for (const s of [1, -1]) for (const wz of o.wheelZ) archU(T, s, x, wz, o.wheelR, o.wheelR * 1.2, o.sill, DARK);
   // door seams, sill, handles
   for (const z of o.seams) sideRibbon(T, 1, x + 0.001, [[z, o.sill + 0.02], [z + (o.seamLean ?? 0), o.belt - 0.04]], 0.006, DARK);
   sideRibbon(T, 1, x + 0.001, [[o.seams[0], o.sill + 0.02], [o.seams[o.seams.length - 1], o.sill + 0.02]], 0.008, DARK);
@@ -514,15 +514,15 @@ function buildParts(T) {
       });
       // wing
       for (const s of [1, -1]) {
-        rbox(B, s * 0.55, 0.96, -hl + 0.42, 0.06, 0.2, 0.14, 0.02, WHITE);
+        rbox(B, s * 0.55, 0.97, -hl + 0.45, 0.06, 0.2, 0.12, 0.02, WHITE);
       }
-      rbox(B, 0, 1.08, -hl + 0.3, hw * 1.9, 0.04, 0.4, 0.015, WHITE, 0, { shiftTop: -0.1 });
+      rbox(B, 0, 1.09, -hl + 0.4, hw * 1.6, 0.04, 0.32, 0.015, WHITE, 0, { shiftTop: -0.06 });
       // splitter, diffuser, side intakes, exhausts
-      rbox(Tr, 0, 0.17, hl - 0.28, hw * 1.9, 0.05, 0.6, 0.02, DARK);
-      rbox(Tr, 0, 0.2, -hl + 0.2, hw * 1.5, 0.12, 0.3, 0.03, DARK);
+      rbox(Tr, 0, 0.17, hl - 0.2, hw * 1.2, 0.05, 0.4, 0.02, DARK);
+      rbox(Tr, 0, 0.2, -hl + 0.3, hw * 1.1, 0.1, 0.3, 0.03, DARK);
       for (const s of [1, -1]) {
         sidePoly(Tr, s, hw + 0.004, [[-0.75, 0.5], [-0.2, 0.46], [-0.2, 0.62], [-0.75, 0.7]], DARK);
-        rbox(Tr, s * 0.5, 0.26, -hl - 0.03, 0.14, 0.14, 0.12, 0.05, CHROME);
+        rbox(Tr, s * 0.42, 0.27, -hl + 0.03, 0.12, 0.12, 0.14, 0.05, CHROME);
       }
       break;
     }
@@ -538,7 +538,7 @@ function buildParts(T) {
           [-0.95, 0.73, 1.38, 0.12, 0], [-0.22, 0.71, 1.4, 0.12, 0], [-0.19, 0.71, 1.4, 0.12, 1], [-0.06, 0.71, 1.4, 0.12, 1],
           [-0.03, 0.71, 1.4, 0.12, 0], [0.2, 0.72, 1.38, 0.12, 0], [0.45, 0.75, 1.3, 0.11, 0], [0.75, 0.79, 1.14, 0.09, 0], [0.97, 0.82, 1.01, 0.06, 0]],
         roof: [-1.2, 0.38],
-        ht: { hy0: 0.45, hy1: 0.6, gy0: 0.4, gy1: 0.54, by0: 0.32, rby0: 0.4, bh: 0.1, ty0: 0.6, ty1: 0.74, py: 0.5, fpy: 0.36, chromeLine: true },
+        ht: { hy0: 0.5, hy1: 0.66, gy0: 0.42, gy1: 0.56, by0: 0.32, rby0: 0.4, bh: 0.1, ty0: 0.62, ty1: 0.76, py: 0.5, fpy: 0.36, chromeLine: true },
       });
       const roofY = 1.4 + 0.014;
       if (police) {
@@ -569,15 +569,14 @@ function buildParts(T) {
       headTail(B, Tr, L, ctx, { hy0: 0.62, hy1: 0.78, gy0: 0.5, gy1: 0.74, by0: 0.42, rby0: 0.5, bh: 0.12, ty0: 0.8, ty1: 1.0, py: 0.62, fpy: 0.46, bumper: CHROME, chromeLine: true });
       sideDetails(B, Tr, ctx, { wheelZ: [1.6, -1.6], wheelR: T.wheelR, sill: 0.46, belt: 1.1, seams: [0.85, 0.0, -0.45], handles: [0.45, -0.1], mirrorZ: 0.9 });
       // bed liner + tailgate
-      const bedTop = 1.243;
+      const bedTop = 1.256;
       {
         const f = Tr.idx.length, vs = [[-0.8, -2.4], [0.8, -2.4], [0.8, -0.78], [-0.8, -0.78]].map((p) => Tr.v(p[0], bedTop, p[1], [0.05, 0.05, 0.055]));
         Tr.quad(vs[0], vs[1], vs[2], vs[3]); Tr.orientDir(f, 0, 1, 0);
       }
       sideRibbon(Tr, 1, hw + 0.004, [[-2.4, 0.5], [-2.4, 1.15]], 0.006, DARK);
-      facePoly(Tr, ctx.rear.zEnd - 0.004, -1, rectPts(-0.9, 0.9, 0.92, 0.95), DARK);
-      rbox(Tr, 0, 0.58, -hl - 0.02, hw * 2.02, 0.14, 0.18, 0.05, CHROME);
-      rbox(Tr, 0, 0.5, hl - 0.05, hw * 2.04, 0.14, 0.2, 0.05, CHROME);
+      wrapStrip(Tr, ctx.rear, 0, hw - 0.01, 0.9, 0.93, 0.006, DARK);
+      rbox(B, 0, 1.4, -0.5, hw * 1.76, 0.3, 0.12, 0.06, WHITE);
       rbox(Tr, 0, 0.3, 0, hw * 1.5, 0.06, hl * 1.4, 0.02, DARK);
       break;
     }
@@ -605,10 +604,9 @@ function buildParts(T) {
         tab: [[-hl, 0.5, 3.0, 0.3, 0.1], [-5.2, 0.45, 3.1, 0.35, 0.12], [5.2, 0.45, 3.1, 0.35, 0.12], [hl, 0.5, 3.0, 0.3, 0.1]],
       });
       ctx.hw = hw;
-      const cw = Math.min(ctx.front.capW - 0.15, 1.0);
-      facePoly(Tr, hl + 0.004, 1, rectPts(-cw, cw, 1.45, 2.75, 0.2).map((p) => p), GLASS);
-      facePoly(Tr, -hl - 0.004, -1, rectPts(-cw, cw, 1.7, 2.6, 0.2).map((p) => p), GLASS);
-      facePoly(Tr, hl + 0.003, 1, rectPts(-0.01, 0.01, 1.45, 2.75), PILLAR);
+      wrapStrip(Tr, ctx.front, 0, 1.12, 1.45, 2.68, 0.01, GLASS);
+      wrapStrip(Tr, ctx.rear, 0, 1.0, 1.7, 2.55, 0.01, GLASS);
+      wrapStrip(Tr, ctx.front, 0, 0.03, 1.45, 2.68, 0.014, PILLAR);
       for (const s of [1, -1]) {
         const x = hw + 0.004;
         const doorSide = s < 0;
@@ -628,8 +626,8 @@ function buildParts(T) {
       rbox(B, 0, 3.2, -0.5, 1.5, 0.22, 2.2, 0.08, WHITE);
       rbox(L, 0, 2.9, hl, hw * 1.0, 0.18, 0.04, 0.05, WHITE, R_SIGN);
       // bumpers, lights, plates
-      rbox(Tr, 0, 0.42, hl - 0.02, hw * 2.0, 0.22, 0.2, 0.08, DARK);
-      rbox(Tr, 0, 0.42, -hl + 0.02, hw * 2.0, 0.22, 0.2, 0.08, DARK);
+      wrapStrip(Tr, ctx.front, 0, hw - 0.01, 0.55, 0.85, 0.02, DARK);
+      wrapStrip(Tr, ctx.rear, 0, hw - 0.01, 0.55, 0.85, 0.02, DARK);
       rbox(L, hw - 0.3, 0.72, hl + 0.01, 0.34, 0.2, 0.04, 0.06, WHITE, R_HEAD);
       rbox(L, -hw + 0.3, 0.72, hl + 0.01, 0.34, 0.2, 0.04, 0.06, WHITE, R_HEAD);
       rbox(L, hw - 0.2, 0.95, -hl - 0.01, 0.2, 0.5, 0.04, 0.06, WHITE, R_TAIL);
@@ -649,7 +647,7 @@ function buildParts(T) {
           [-0.95, 0.73, 1.38, 0.12, 0], [-0.22, 0.71, 1.4, 0.12, 0], [-0.19, 0.71, 1.4, 0.12, 1], [-0.06, 0.71, 1.4, 0.12, 1],
           [-0.03, 0.71, 1.4, 0.12, 0], [0.2, 0.72, 1.38, 0.12, 0], [0.45, 0.75, 1.3, 0.11, 0], [0.75, 0.79, 1.14, 0.09, 0], [0.97, 0.82, 1.01, 0.06, 0]],
         roof: [-1.2, 0.38],
-        ht: { hy0: 0.45, hy1: 0.6, gy0: 0.4, gy1: 0.54, by0: 0.32, rby0: 0.4, bh: 0.1, ty0: 0.6, ty1: 0.74, py: 0.5, fpy: 0.36, chromeLine: true },
+        ht: { hy0: 0.5, hy1: 0.66, gy0: 0.42, gy1: 0.56, by0: 0.32, rby0: 0.4, bh: 0.1, ty0: 0.62, ty1: 0.76, py: 0.5, fpy: 0.36, chromeLine: true },
       });
     }
   }

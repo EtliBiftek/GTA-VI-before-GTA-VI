@@ -9,8 +9,12 @@ const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; 
 const lerp = (a, b, t) => a + (b - a) * t;
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-function tex(canvas, { srgb = false, aniso = 1, wrap = true } = {}) {
+const release = (t) => { // free the 2D canvas backing store once the GPU has its copy (big memory saver)
+  t.onUpdate = () => { const c = t.image; if (c && c.width > 1 && c.getContext) { c.width = 1; c.height = 1; } t.onUpdate = null; };
+};
+function tex(canvas, { srgb = false, aniso = 1, wrap = true, keep = false } = {}) {
   const t = new THREE.CanvasTexture(canvas);
+  if (!keep) release(t);
   if (wrap) t.wrapS = t.wrapT = THREE.RepeatWrapping; else t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
@@ -75,7 +79,7 @@ class Layers {
     for (let i = 0; i < S * S; i++) { const v = R() * 255; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; }
     gc.putImageData(im, 0, 0);
     this.cg.save(); this.cg.globalAlpha = a; this.cg.globalCompositeOperation = 'overlay'; this.cg.fillStyle = this.cg.createPattern(g, 'repeat'); this.cg.fillRect(0, 0, this.w, this.h); this.cg.restore();
-    if (this.hg) { this.hg.save(); this.hg.globalAlpha = a * 0.7; this.hg.globalCompositeOperation = 'overlay'; this.hg.fillStyle = this.hg.createPattern(g, 'repeat'); this.hg.fillRect(0, 0, this.w, this.h); this.hg.restore(); }
+    if (this.hg) { this.hg.save(); this.hg.globalAlpha = a * 0.3; this.hg.globalCompositeOperation = 'overlay'; this.hg.fillStyle = this.hg.createPattern(g, 'repeat'); this.hg.fillRect(0, 0, this.w, this.h); this.hg.restore(); }
   }
   maps({ aniso = 1, normal = 2 } = {}) {
     const r = { map: tex(this.c, { srgb: true, aniso }), emissiveMap: tex(this.e, { srgb: true, aniso }) };
@@ -159,7 +163,7 @@ export function makeGrass(t, aniso) {
   const cc = mk(S, S), cg = cc.getContext('2d'), hc = mk(S, S), hg = hc.getContext('2d');
   const ci = cg.createImageData(S, S), hi = hg.createImageData(S, S);
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const u = x / S, v = y / S, g = R(), low = N.fbm(u, v, 3, 3), mid = N.fbm(u, v, 14, 3), dry = sstep(0.55, 0.8, N.fbm(u + 0.3, v + 0.7, 4, 3)), i = (y * S + x) * 4;
+    const u = x / S, v = y / S, g = R(), low = N.fbm(u, v, 3, 3), mid = N.fbm(u, v, 14, 3), dry = sstep(0.62, 0.9, N.fbm(u + 0.3, v + 0.7, 4, 3)) * 0.6, i = (y * S + x) * 4;
     const lum = 196 + (low - 0.5) * 60 + (mid - 0.5) * 50 + (g - 0.5) * 36;
     ci.data[i] = lum * (0.97 + dry * 0.17); ci.data[i + 1] = lum; ci.data[i + 2] = lum * (0.93 - dry * 0.22); ci.data[i + 3] = 255;
     const h = 128 + (mid - 0.5) * 90 + (g - 0.5) * 70; hi.data[i] = hi.data[i + 1] = hi.data[i + 2] = h; hi.data[i + 3] = 255;
@@ -278,11 +282,11 @@ export const FACADE = {
   industrial: { cellW: 5, floor: 5, repW: 5 * CELLS, repH: 5 * CELLS },
 };
 export const SHOP = { repW: 25.6, h: 3.5 };
-const LIT = ['#ffe3ae', '#ffd48f', '#fff0cf', '#ffcf8a', '#bfe9ff', '#d8f0ff', '#ffc0ef', '#ffb070'];
+const LIT = ['#e9c890', '#e8b878', '#f0dcb4', '#e6b66f', '#a9d4ec', '#bcd8ea', '#e6a8d8', '#e09a5c'];
 const litCol = (R) => (R() < 0.06 ? '#ff9ad8' : R() < 0.16 ? '#9fdcff' : LIT[Math.floor(R() * 4)]);
 
 function facadeTiles(kind, seed, t, aniso) {
-  const R = seeded(seed), S = [256, 512, 1024][t], cs = S / CELLS, L = new Layers(S, S, t, 0.9);
+  const R = seeded(seed), S = [256, 512, kind === 'industrial' ? 512 : 1024][t], cs = S / CELLS, L = new Layers(S, S, t, 0.9);
   const chance = { glass: 0.5, deco: 0.42, house: 0.33, industrial: 0.18 }[kind];
   L.p(0, 0, S, S, { c: '#fff', h: 0.5, r: 0.9, m: 0 });
   const u = cs / 64; // scale unit (cell px / 64)
@@ -291,14 +295,14 @@ function facadeTiles(kind, seed, t, aniso) {
     if (kind === 'glass') {
       const sp = Math.round(cs * 0.24), m = Math.max(2, Math.round(cs * 0.035));
       L.p(x, y, cs, cs, { c: '#a9b2bb', h: 0.72, r: 0.32, m: 0.85 });
-      L.p(x, y + cs - sp, cs, sp, { c: '#6f7d8c', h: 0.6, r: 0.55, m: 0.35 });
+      L.p(x, y + cs - sp, cs, sp, { c: '#8c9aa9', h: 0.6, r: 0.55, m: 0.3 });
       L.grad(x, y + cs - sp, cs, sp, x, y + cs, [[0, 'rgba(255,255,255,0.18)'], [1, 'rgba(0,0,0,0.25)']]);
       const pw = (cs - 3 * m) / 2, ph = cs - sp - 2 * m, litI = lit ? Math.floor(R() * 3) : -1; // 0 left,1 right,2 both
       const tone = R();
       for (let i = 0; i < 2; i++) {
         const px = x + m + i * (pw + m), py = y + m;
-        L.p(px, py, pw, ph, { c: '#33526f', h: 0.42, r: 0.07, m: 0.55 });
-        L.grad(px, py, pw, ph, px + pw, py + ph, [[0, `rgba(190,220,245,${0.5 + tone * 0.3})`], [0.45, 'rgba(120,160,200,0.15)'], [1, 'rgba(10,25,45,0.5)']]);
+        L.p(px, py, pw, ph, { c: '#5d88ae', h: 0.42, r: 0.07, m: 0.4 });
+        L.grad(px, py, pw, ph, px + pw, py + ph, [[0, `rgba(215,236,252,${0.55 + tone * 0.3})`], [0.45, 'rgba(150,185,215,0.2)'], [1, 'rgba(20,40,70,0.35)']]);
         const blind = R() < 0.3 ? 0.25 + R() * 0.65 : 0;
         if (blind) {
           const bh = ph * blind; L.p(px, py, pw, bh, { c: '#d6cebd', h: 0.5, r: 0.75, m: 0 });
@@ -316,8 +320,8 @@ function facadeTiles(kind, seed, t, aniso) {
       L.p(x, y + cs * 0.94, cs, cs * 0.06, { c: '#fff', h: 0.7, r: 0.85 }); // string course
       const balcony = ry > 0 && R() < 0.2, shut = !balcony && R() < 0.22, ow = cs * (balcony ? 0.5 : 0.4), oh = cs * (balcony ? 0.62 : 0.5), ox = x + (cs - ow) / 2, oy = y + cs * 0.12;
       L.p(ox - 3 * u, oy - 3 * u, ow + 6 * u, oh + 6 * u, { c: '#efe9dc', h: 0.64, r: 0.8 }); // frame/lintel
-      L.p(ox, oy, ow, oh, { c: '#2c3c50', h: 0.3, r: 0.07, m: 0.5 });
-      L.grad(ox, oy, ow, oh, ox + ow, oy + oh, [[0, 'rgba(170,205,235,0.55)'], [0.5, 'rgba(90,130,170,0.1)'], [1, 'rgba(5,15,30,0.45)']]);
+      L.p(ox, oy, ow, oh, { c: '#41597a', h: 0.3, r: 0.07, m: 0.4 });
+      L.grad(ox, oy, ow, oh, ox + ow, oy + oh, [[0, 'rgba(190,220,245,0.6)'], [0.5, 'rgba(110,150,190,0.15)'], [1, 'rgba(10,25,45,0.35)']]);
       L.p(ox + ow / 2 - u, oy, 2 * u, oh, { c: '#efe9dc', h: 0.62, r: 0.8 }); // mullion
       const bl = R() < 0.3 ? 0.2 + R() * 0.6 : 0;
       if (bl) { L.p(ox, oy, ow, oh * bl, { c: R() < 0.5 ? '#e8dcc4' : '#cfd6dd', h: 0.5, r: 0.8 }); }
@@ -410,10 +414,10 @@ export function makeShopfront(t, aniso) {
     L.p(wx - 2 * u, wy - 2 * u, ww + 4 * u, wh + 4 * u, { c: '#2a2c30', h: 0.65, r: 0.4, m: 0.7 });
     L.p(wx, wy, ww, wh, { c: '#22303f', h: 0.35, r: 0.05, m: 0.55 });
     L.grad(wx, wy, ww, wh, wx + ww, wy + wh, [[0, 'rgba(190,220,245,0.55)'], [0.5, 'rgba(90,130,170,0.1)'], [1, 'rgba(5,15,30,0.4)']]);
-    const warm = ['#ffd9a0', '#ffe9c8', '#d8ecff', '#ffc890'][Math.floor(R() * 4)];
+    const warm = ['#d9b27a', '#e6cba2', '#bcd2e6', '#dca66e'][Math.floor(R() * 4)];
     L.eg.fillStyle = warm; L.eg.fillRect(wx, wy, ww, wh); // interior light
     const gg = L.eg.createLinearGradient(0, wy, 0, wy + wh); gg.addColorStop(0, 'rgba(0,0,0,0.5)'); gg.addColorStop(0.3, 'rgba(0,0,0,0)'); L.eg.fillStyle = gg; L.eg.fillRect(wx, wy, ww, wh);
-    for (let s = 0; s < 3; s++) { const sy = wy + wh * (0.35 + s * 0.2); L.p(wx + 3 * u, sy, ww - 6 * u, 2 * u, { c: '#5a5148', h: 0.6, r: 0.6 }); L.eg.fillStyle = 'rgba(0,0,0,0.55)'; for (let k = 0; k < 5; k++) L.eg.fillRect(wx + 5 * u + R() * (ww - 14 * u), sy - (4 + R() * 6) * u, (3 + R() * 5) * u, (4 + R() * 6) * u); } // shelves + goods
+    for (let s = 0; s < 3; s++) { const sy = wy + wh * (0.35 + s * 0.2); L.p(wx + 3 * u, sy, ww - 6 * u, 2 * u, { c: '#5a5148', h: 0.6, r: 0.6 }); L.eg.fillStyle = 'rgba(0,0,0,0.28)'; for (let k = 0; k < 6; k++) L.eg.fillRect(wx + 5 * u + R() * (ww - 14 * u), sy - (3 + R() * 4) * u, (2 + R() * 3) * u, (3 + R() * 4) * u); } // shelves + goods
     if (door) { // glass door
       const dw = bw * 0.24;
       L.p(dx, wy, dw, wh + bh * 0.04, { c: '#34363b', h: 0.62, r: 0.4, m: 0.7 }); L.p(dx + 2 * u, wy + 3 * u, dw - 4 * u, wh - 6 * u, { c: '#1d2a38', h: 0.35, r: 0.05, m: 0.5 }); L.eg.fillStyle = warm; L.eg.fillRect(dx + 2 * u, wy + 3 * u, dw - 4 * u, wh - 6 * u);
@@ -533,7 +537,7 @@ export function makeSignalTex() {
     if (on) { const gr = g.createRadialGradient(16, cy, 1, 16, cy, 15); gr.addColorStop(0, '#fff'); gr.addColorStop(0.35, lamps[l][0]); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, cy - 16, 32, 32); }
     else { g.fillStyle = lamps[l][1]; g.beginPath(); g.arc(16, cy, 11, 0, 6.3); g.fill(); }
   }
-  return tex(cv, { srgb: true, wrap: false });
+  return tex(cv, { srgb: true, wrap: false, keep: true });
 }
 
 export function makeGlow() {

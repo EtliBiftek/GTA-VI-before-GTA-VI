@@ -64,7 +64,7 @@ export function createSky(game, onEnv, waterGeo) {
           dens = smoothstep(cover, cover+0.26, f) * smoothstep(0.0,0.16,y);
           float f2 = fbm(p*1.3 + sunDir.xz*0.10);
           shade = clamp(0.55 + (f - f2)*5.5, 0.0, 1.0);
-          vec3 lit = mix(vec3(1.0), sunCol, 0.45)*(0.5+0.75*light) + top*0.15;
+          vec3 lit = mix(vec3(1.0), sunCol, 0.45)*(0.5+0.75*light)*mix(0.14,1.0,smoothstep(0.0,0.5,light)) + top*0.15;
           vec3 dark = top*0.65 + hor*0.35 + vec3(0.05);
           vec3 cc = mix(dark, lit, shade);
           cc += sunCol*pow(s,10.0)*0.6*sunVis*(1.0-dens*0.4);

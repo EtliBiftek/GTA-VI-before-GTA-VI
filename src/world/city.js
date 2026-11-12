@@ -41,7 +41,7 @@ export function createWorld(game) {
   const addLandmark = (id, name, type, x, z) => { landmarks.push({ id, name, type, x, z }); reserved.push({ x, z, r: 4.5 }); };
 
   // ---------- ground ----------
-  grassFar.rect(-2500, -2500, 2500, 2500, -0.06, C(0x86a866));
+  grassFar.rect(-2500, -2500, 2500, 2500, -0.3, C(0x86a866));
   buildRoadMeshes(G, asphalt, marks, { tracks: tracksB, decals: decalsB, rng: seeded(4242), decalUV, DECAL });
   const CONC = C(0xc4c1b8);
   // outer sidewalks around the grid
@@ -629,8 +629,7 @@ export function createWorld(game) {
   const trackMat = poly(mkMat({ vertexColors: true, map: makeTracks(tier), transparent: true, depthWrite: false, roughness: 0.6 }), -1, -3);
   add(tracksB.build(), trackMat, { recv: true }).renderOrder = 1;
   add(decalsB.build(), poly(mkMat({ vertexColors: true, map: makeDecals(tier, aniso), transparent: true, depthWrite: false, roughness: 0.5, metalness: tier ? 0.25 : 0 }), -1, -5), { recv: true }).renderOrder = 2;
-  const roofTex = makePavers(tier, aniso);
-  add(roofB.build(), groundMat(roofTex, { ns: 0.6 }), { recv: true });
+  add(roofB.build(), groundMat(pav, { ns: 0.6 }), { recv: true });
   const rt = makeRoofTiles(tier, aniso); // terracotta tiles
   add(tilesB.build(), groundMat(rt, { ns: 1.0, side: THREE.DoubleSide }), { recv: true, cast: true });
   const solidMat = mkMat({ vertexColors: true, side: THREE.DoubleSide }); if (bump) noisePatch(solidMat, 0.28, 0.8);
@@ -657,10 +656,10 @@ export function createWorld(game) {
   // ---- palms: curved segmented trunk with bark rings, drooping fronds (alpha-cut feather texture) ----
   const palmB = new Batch();
   {
-    const nR = tier === 0 ? 5 : 9, sides = tier === 0 ? 5 : 7, Ht = 7.2, bark = C(0xa88a64), rings = [];
+    const nR = tier === 0 ? 4 : tier === 1 ? 6 : 9, sides = tier === 0 ? 5 : 6, Ht = 7.2, bark = C(0xa88a64), rings = [];
     for (let i = 0; i < nR; i++) { const f = i / (nR - 1); rings.push({ x: 1.1 * f * f, y: f * Ht, z: 0.2 * f, r: 0.145 + 0.17 * Math.pow(1 - f, 3), v: 0.02 + 0.94 * f }); }
     palmB.sweep(rings, sides, (i) => shade(bark, i % 2 ? 1 : 0.86), 0.5);
-    const top = rings[nR - 1], nF = tier === 0 ? 8 : 11, segs = tier === 0 ? 4 : 6, FR = seeded(31337);
+    const top = rings[nR - 1], nF = tier === 0 ? 7 : 9, segs = tier === 0 ? 3 : 5, FR = seeded(31337);
     for (let f = 0; f < nF; f++) {
       const th = f / nF * Math.PI * 2 + FR() * 0.5, cx = Math.cos(th), cz = Math.sin(th), px = -cz, pz = cx;
       const len = 3.3 + FR() * 1.1, rise = f % 3 === 0 ? 2.6 : 1.4 + FR() * 0.6, droop = f % 3 === 0 ? 2.8 : 3.2 + FR() * 1.2, tone = 0.78 + FR() * 0.35;
@@ -675,7 +674,7 @@ export function createWorld(game) {
       }
       for (let j = 0; j < segs; j++) { const a = base + j * 3; palmB.idx.push(a, a + 1, a + 4, a, a + 4, a + 3, a + 1, a + 2, a + 5, a + 1, a + 5, a + 4); }
     }
-    for (let k = 0; k < 3; k++) palmB.blob(top.x + Math.cos(k * 2.1) * 0.2, top.y - 0.12, top.z + Math.sin(k * 2.1) * 0.2, 0.17, 0.2, 0.17, C(0x6a4a2a), 0);
+    if (tier > 0) for (let k = 0; k < 3; k++) palmB.blob(top.x + Math.cos(k * 2.1) * 0.2, top.y - 0.12, top.z + Math.sin(k * 2.1) * 0.2, 0.17, 0.2, 0.17, C(0x6a4a2a), 0);
   }
   const palmMat = mkMat({ vertexColors: true, map: veg, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.8 });
   palmMat.onBeforeCompile = (sh) => {
@@ -699,9 +698,31 @@ export function createWorld(game) {
     list.forEach((p, k) => { place(p); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix); if (o.color) { o.color(p, tint); m.setColorAt(k, tint); } });
     m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.frustumCulled = false; m.castShadow = !!o.cast; m.receiveShadow = !!o.recv; group.add(m); return m;
   };
+  /** Distance-cull an InstancedMesh (list items have x,z): re-packs the visible instances when the camera moved. */
+  const culled = [];
+  const makeCullable = (m, list, getX = (p) => p.x, getZ = (p) => p.z) => {
+    const all = m.instanceMatrix.array.slice(), allC = m.instanceColor ? m.instanceColor.array.slice() : null, N = list.length, px = new Float32Array(N), pz = new Float32Array(N);
+    list.forEach((p, i) => { px[i] = getX(p); pz[i] = getZ(p); });
+    culled.push({ m, all, allC, px, pz, N });
+  };
+  let cullX = 1e9, cullZ = 1e9;
+  const refreshCull = (force) => {
+    const c = game.camera.position;
+    if (!force && Math.hypot(c.x - cullX, c.z - cullZ) < 25) return;
+    cullX = c.x; cullZ = c.z;
+    const R = Math.min(game.q.drawDistance * 1.2, 520), R2 = R * R;
+    for (const it of culled) {
+      let k = 0; const ma = it.m.instanceMatrix.array, ca = it.m.instanceColor?.array;
+      for (let i = 0; i < it.N; i++) {
+        const dx = it.px[i] - c.x, dz = it.pz[i] - c.z; if (dx * dx + dz * dz > R2) continue;
+        ma.set(it.all.subarray(i * 16, i * 16 + 16), k * 16); if (ca) ca.set(it.allC.subarray(i * 3, i * 3 + 3), k * 3); k++;
+      }
+      it.m.count = k; it.m.instanceMatrix.needsUpdate = true; if (it.m.instanceColor) it.m.instanceColor.needsUpdate = true;
+    }
+  };
   const hv = (p, k) => { const t = Math.sin(p.x * 12.9898 + p.z * 78.233 + k * 3.7) * 43758.5453; return t - Math.floor(t); };
-  inst(palmB.build(), palmMat, placed.palms, (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = (p.x * 7.3 + p.z * 3.1) % 6.28; dummy.rotation.z = (hv(p, 1) - 0.5) * 0.06; dummy.scale.setScalar(p.s); },
-    { cast: true, color: (p, c) => c.setRGB(0.85 + hv(p, 2) * 0.3, 0.9 + hv(p, 3) * 0.2, 0.8 + hv(p, 4) * 0.25) });
+  makeCullable(inst(palmB.build(), palmMat, placed.palms, (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = (p.x * 7.3 + p.z * 3.1) % 6.28; dummy.rotation.z = (hv(p, 1) - 0.5) * 0.06; dummy.scale.setScalar(p.s); },
+    { cast: true, color: (p, c) => c.setRGB(0.85 + hv(p, 2) * 0.3, 0.9 + hv(p, 3) * 0.2, 0.8 + hv(p, 4) * 0.25) }), placed.palms);
   // ---- broadleaf trees: tapered trunk + clustered smooth-shaded foliage blobs with colour variation ----
   const treeB = new Batch();
   {
@@ -709,9 +730,9 @@ export function createWorld(game) {
     treeB.box(0.05, 2.2, 0, 0.7, 2.3, 0.08, C(0x6b4f36), false); treeB.box(-0.5, 2.5, -0.06, 0.05, 2.6, 0.02, C(0x6b4f36), false);
     const dk = C(0x2a6a34), lt = C(0x7ec45c), TR = seeded(888);
     const blobs = [[0, 4.3, 0, 1.7, 1.4], [0.95, 3.9, 0.3, 1.15, 1.0], [-0.9, 4.0, -0.4, 1.25, 1.05], [0.2, 5.4, 0.2, 1.25, 1.0], [0.3, 4.2, -1.05, 1.05, 0.95], [-0.55, 4.5, 1.0, 1.05, 0.95], [0.1, 3.4, 0.15, 1.3, 0.8]];
-    blobs.forEach(([x, y, z, r, ry], i) => {
+    blobs.slice(0, tier === 0 ? 5 : 7).forEach(([x, y, z, r, ry], i) => {
       const jit = TR() * 6.28;
-      treeB.blob(x, y, z, r, ry, r, (ux, uy, uz) => { const t = Math.min(1, Math.max(0, uy * 0.5 + 0.5 + 0.12 * Math.sin(ux * 7 + jit) + 0.1 * Math.sin(uz * 9 + jit * 2))), l = 0.55 + 0.45 * Math.min(1, (y + uy * ry - 2.6) / 3.2); return [(dk[0] + (lt[0] - dk[0]) * t) * l, (dk[1] + (lt[1] - dk[1]) * t) * l, (dk[2] + (lt[2] - dk[2]) * t) * l]; }, tier === 0 ? 0 : (i < 4 ? 1 : 0), jit);
+      treeB.blob(x, y, z, r, ry, r, (ux, uy, uz) => { const t = Math.min(1, Math.max(0, uy * 0.5 + 0.5 + 0.12 * Math.sin(ux * 7 + jit) + 0.1 * Math.sin(uz * 9 + jit * 2))), l = 0.55 + 0.45 * Math.min(1, (y + uy * ry - 2.6) / 3.2); return [(dk[0] + (lt[0] - dk[0]) * t) * l, (dk[1] + (lt[1] - dk[1]) * t) * l, (dk[2] + (lt[2] - dk[2]) * t) * l]; }, tier === 2 && i < 4 ? 1 : 0, jit);
     });
   }
   const treeMat = mkMat({ vertexColors: true, roughness: 0.82 });
@@ -720,8 +741,8 @@ export function createWorld(game) {
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vLp;\n${NZ_GLSL}`)
       .replace('#include <color_fragment>', '#include <color_fragment>\n{ float nz = vn(vLp.xy*5.0+vLp.z*3.0)*0.55 + vn(vLp.xz*13.0+vLp.y*7.0)*0.45; diffuseColor.rgb *= 0.78 + nz*0.46; }');
   };
-  inst(treeB.build(), treeMat, placed.trees, (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = (p.x + p.z) % 6.28; dummy.scale.set(p.s, p.s * (0.9 + hv(p, 5) * 0.25), p.s); },
-    { cast: true, color: (p, c) => c.setRGB(0.85 + hv(p, 6) * 0.35, 0.9 + hv(p, 7) * 0.2, 0.8 + hv(p, 8) * 0.3) });
+  makeCullable(inst(treeB.build(), treeMat, placed.trees, (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = (p.x + p.z) % 6.28; dummy.scale.set(p.s, p.s * (0.9 + hv(p, 5) * 0.25), p.s); },
+    { cast: true, color: (p, c) => c.setRGB(0.85 + hv(p, 6) * 0.35, 0.9 + hv(p, 7) * 0.2, 0.8 + hv(p, 8) * 0.3) }), placed.trees);
   // ---- street lamps (curved arm, cobra head) with glowing lens, ground light pools and halo points ----
   const lampB = new Batch(), lampHeadB = new Batch(), LG = C(0x4a4e58), LH = C(0x5d626c);
   lampB.sweep([{ x: 0, y: 0, z: 0, r: 0.2, v: 0 }, { x: 0, y: 0.45, z: 0, r: 0.16, v: 1 }, { x: 0, y: 0.55, z: 0, r: 0.09, v: 2 }, { x: 0, y: 6.1, z: 0, r: 0.06, v: 3 }], 8, LG);
@@ -729,13 +750,13 @@ export function createWorld(game) {
   lampB.box(0.95, 6.14, -0.17, 1.9, 6.34, 0.17, LH); lampB.box(1.0, 6.0, -0.14, 1.85, 6.14, 0.14, C(0x30343a), false);
   lampHeadB.face([[1.05, 5.995, -0.12], [1.8, 5.995, -0.12], [1.8, 5.995, 0.12], [1.05, 5.995, 0.12]], [0, -1, 0], [1, 1, 1]);
   const lampPlace = (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = Math.atan2(-p.dz, p.dx); };
-  inst(lampB.build(), mkMat({ vertexColors: true, roughness: 0.6, metalness: tier ? 0.4 : 0 }), placed.lamps, lampPlace, { cast: true });
+  makeCullable(inst(lampB.build(), mkMat({ vertexColors: true, roughness: 0.6, metalness: tier ? 0.4 : 0 }), placed.lamps, lampPlace, { cast: true }), placed.lamps);
   const lampHeadMat = new THREE.MeshBasicMaterial({ vertexColors: true, color: 0xcfd2d8, side: THREE.DoubleSide });
-  inst(lampHeadB.build(), lampHeadMat, placed.lamps, lampPlace);
+  makeCullable(inst(lampHeadB.build(), lampHeadMat, placed.lamps, lampPlace), placed.lamps);
   const poolMat = new THREE.MeshBasicMaterial({ map: makePool(), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: true });
   poolMat.polygonOffset = true; poolMat.polygonOffsetFactor = -2; poolMat.polygonOffsetUnits = -6;
   const poolGeo = new THREE.PlaneGeometry(15, 15); poolGeo.rotateX(-Math.PI / 2);
-  inst(poolGeo, poolMat, placed.lamps, (p) => { resetD(); dummy.position.set(p.x + p.dx * 1.6, 0.05, p.z + p.dz * 1.6); }).renderOrder = 3;
+  { const pm = inst(poolGeo, poolMat, placed.lamps, (p) => { resetD(); dummy.position.set(p.x + p.dx * 1.6, 0.05, p.z + p.dz * 1.6); }); pm.renderOrder = 3; makeCullable(pm, placed.lamps); }
   const haloMat = new THREE.PointsMaterial({ map: makeGlow(), size: 4.2, sizeAttenuation: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
   { const hp = new Float32Array(placed.lamps.length * 3); placed.lamps.forEach((p, k) => { hp[k * 3] = p.x + p.dx * 1.45; hp[k * 3 + 1] = 5.95; hp[k * 3 + 2] = p.z + p.dz * 1.45; });
     const hg = new THREE.BufferGeometry(); hg.setAttribute('position', new THREE.BufferAttribute(hp, 3)); const pts = new THREE.Points(hg, haloMat); pts.frustumCulled = false; pts.renderOrder = 4; group.add(pts); }
@@ -776,7 +797,8 @@ export function createWorld(game) {
     glowMat.color.setScalar(0.5 + e.nightF * 2.8); billMat.color.setScalar(1 + e.nightF * 0.9);
     sigNS.color.setScalar(1 + e.nightF * 0.8); sigEW.color.setScalar(1 + e.nightF * 0.8);
   }, waterGeo);
-  game.events.on('settings:changed', () => { for (const m of mats) m.needsUpdate = true; });
+  game.events.on('settings:changed', () => { for (const m of mats) m.needsUpdate = true; refreshCull(true); });
+  refreshCull(true);
 
   // ---------- spatial grid ----------
   const GC = 20, GO = -640, GN = 64, NC = colliders.length;
@@ -918,7 +940,7 @@ export function createWorld(game) {
     getLandmark: (id) => lmMap.get(id) || null,
     collideCircle, raycast, isWater, isRoad: roads.isRoad, randomSidewalkPoint, randomRoadPoint,
     minimap: renderMinimap(G, cells, footprints),
-    update(dt) { base.update(dt); tl += dt; swayU.value += dt; cycleSignals(); },
+    update(dt) { base.update(dt); tl += dt; swayU.value += dt; cycleSignals(); refreshCull(false); },
     // lighting handles for the renderer pipeline (environment intensity, bloom, ...)
     sunLight: base.sun, hemiLight: base.hemi, sky: base,
     get nightFactor() { return base.state.nightFactor; },
