@@ -15,6 +15,7 @@ export function createPlayer(game) {
   const { scene, camera, events, input } = game;
 
   const hum = createHumanoid({
+    build: 'm',
     shirt: 0x12b5a6, pants: 0xf1f1ea, skin: 0xd6a074, hair: 0x2a1a12, hat: 0xff6a5c, shoes: 0xf5f5f5, glasses: true,
   });
   const mesh = hum.group;

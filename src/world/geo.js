@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 const _c = new THREE.Color();
 const _cache = new Map();
+const BLOB = {};
 /** hex -> [r,g,b] in linear working space (what vertex colours expect). */
 export function C(hex) {
   let v = _cache.get(hex);
@@ -12,13 +13,13 @@ export function C(hex) {
 export function shade(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
 
 export class Batch {
-  constructor() { this.pos = []; this.nor = []; this.col = []; this.uv = []; this.idx = []; this.n = 0; }
+  constructor(wuv = 0) { this.pos = []; this.nor = []; this.col = []; this.uv = []; this.idx = []; this.n = 0; this.wuv = wuv; }
 
   _v(p, nx, ny, nz, c, uv) {
     this.pos.push(p[0], p[1], p[2]);
     this.nor.push(nx, ny, nz);
     this.col.push(c[0], c[1], c[2]);
-    this.uv.push(uv ? uv[0] : 0, uv ? uv[1] : 0);
+    if (uv) this.uv.push(uv[0], uv[1]); else if (this.wuv) this.uv.push(p[0] / this.wuv, p[2] / this.wuv); else this.uv.push(0, 0);
     return this.n++;
   }
 
@@ -96,6 +97,64 @@ export class Batch {
     };
     const n = idx ? idx.count : p.count;
     for (let i = 0; i < n; i += 3) idx ? tri(idx.getX(i), idx.getX(i + 1), idx.getX(i + 2)) : tri(i, i + 1, i + 2);
+  }
+
+
+  /** Smooth-shaded ellipsoid blob (radial normals); colFn(ux,uy,uz) -> [r,g,b] gets the unit-sphere direction. */
+  blob(cx, cy, cz, rx, ry, rz, colFn, detail = 1, rot = 0) {
+    const g = BLOB[detail] || (BLOB[detail] = new THREE.IcosahedronGeometry(1, detail));
+    const p = g.attributes.position, cs = Math.cos(rot), sn = Math.sin(rot);
+    const base = this.n;
+    for (let i = 0; i < p.count; i++) {
+      let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      const l = Math.hypot(x, y, z); x /= l; y /= l; z /= l;
+      const c = typeof colFn === 'function' ? colFn(x, y, z) : colFn;
+      const px = x * rx, py = y * ry, pz = z * rz;
+      let nx = x / rx, ny = y / ry, nz = z / rz; const nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
+      this._v([cx + px * cs + pz * sn, cy + py, cz - px * sn + pz * cs], nx * cs + nz * sn, ny, -nx * sn + nz * cs, c, null);
+    }
+    for (let i = 0; i < p.count; i += 3) this.idx.push(base + i, base + i + 1, base + i + 2);
+  }
+
+  /** Smooth open tube along rings [{x,y,z,r}] (horizontal circles). uv: u around (0..uRep), v = ring v. */
+  sweep(rings, sides, colFn, uRep = 1) {
+    const base = this.n;
+    for (let i = 0; i < rings.length; i++) {
+      const r = rings[i], nx = i + 1 < rings.length ? rings[i + 1] : r, pv = i > 0 ? rings[i - 1] : r;
+      const tx = nx.x - pv.x, ty = nx.y - pv.y, tz = nx.z - pv.z;
+      for (let k = 0; k <= sides; k++) {
+        const a = k / sides * Math.PI * 2, cx = Math.cos(a), sz = Math.sin(a);
+        // normal tilted by taper
+        const slope = (pv.r - nx.r) / (Math.hypot(tx, ty, tz) || 1);
+        const c = typeof colFn === 'function' ? colFn(i, k) : colFn;
+        const nl = Math.hypot(cx, slope, sz);
+        this._v([r.x + cx * r.r, r.y, r.z + sz * r.r], cx / nl, slope / nl, sz / nl, c, [k / sides * uRep, r.v ?? i]);
+      }
+    }
+    const rw = sides + 1;
+    for (let i = 0; i < rings.length - 1; i++) for (let k = 0; k < sides; k++) {
+      const a = base + i * rw + k, b = a + 1, c = a + rw, d = c + 1;
+      this.idx.push(a, c, b, b, c, d);
+    }
+  }
+
+  /** Ribbon strip along points [[x,y,z],...] with half-widths w[i]; side vector s=[sx,sy,sz]. Double sided (normal up). */
+  strip(pts, ws, side, c, uRange = [0, 1], vs = null, nrm = [0, 1, 0]) {
+    const base = this.n;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], w = ws[i], cc = Array.isArray(c[0]) ? c[i] : c;
+      const v = vs ? vs[i] : i / (pts.length - 1);
+      this._v([p[0] - side[0] * w, p[1] - side[1] * w, p[2] - side[2] * w], nrm[0], nrm[1], nrm[2], cc, [uRange[0], v]);
+      this._v([p[0] + side[0] * w, p[1] + side[1] * w, p[2] + side[2] * w], nrm[0], nrm[1], nrm[2], cc, [uRange[1], v]);
+    }
+    for (let i = 0; i < pts.length - 1; i++) { const a = base + i * 2; this.idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+
+  /** Vertical cylinder with smooth normals. */
+  cyl(cx, y0, cz, r0, r1, h, sides, c, cap = true) {
+    const rings = [{ x: cx, y: y0, z: cz, r: r0, v: 0 }, { x: cx, y: y0 + h, z: cz, r: r1, v: 1 }];
+    this.sweep(rings, sides, c);
+    if (cap) { const pts = []; for (let k = 0; k < sides; k++) { const a = k / sides * Math.PI * 2; pts.push([cx + Math.cos(a) * r1, y0 + h, cz + Math.sin(a) * r1]); } for (let i = 1; i < sides - 1; i++) this.face([pts[0], pts[i], pts[i + 1]], [0, 1, 0], c); }
   }
 
   build() {

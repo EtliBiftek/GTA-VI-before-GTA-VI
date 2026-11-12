@@ -94,7 +94,7 @@ export function createPeds(game) {
     g.rotation.y = p.heading;
     if (weapon && hum.parts?.handR) {
       const gm = new THREE.Mesh(gunGeo, gunMat);
-      gm.position.set(0, -0.05, 0.15);
+      gm.position.set(0, -0.12, 0.04); gm.rotation.x = Math.PI / 2;
       hum.parts.handR.add(gm);
       p.gun = gm;
     }
