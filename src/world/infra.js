@@ -164,6 +164,10 @@ export function makeInfra(ctx, kit) {
         else { const x0 = k === 2 ? q[2] - t0 * T : q[0] + t0 * T, x1 = k === 2 ? q[2] - t1 * T : q[0] + t1 * T, y0 = 3 + t0 * 13, y1 = 3 + t1 * 13; S.face([[x0, y0, q[1]], [x0, y0, q[3]], [x1, y1, q[3]], [x1, y1, q[1]]], [inX, 1, 0], col); }
       }
     });
+    { const rib = C(0x6a7078); // pilasters + dark band on the outer wall
+      for (let x = cx - ax + 4; x < cx + ax - 2; x += 8) { S.box(x - 0.5, 0, cz - az - 0.5, x + 0.5, 17, cz - az, rib); S.box(x - 0.5, 0, cz + az, x + 0.5, 17, cz + az + 0.5, rib); }
+      for (let z = cz - az + 4; z < cz + az - 2; z += 8) { S.box(cx - ax - 0.5, 0, z - 0.5, cx - ax, 17, z + 0.5, rib); S.box(cx + ax, 0, z - 0.5, cx + ax + 0.5, 17, z + 0.5, rib); }
+      S.box(cx - ax - 0.3, 12.5, cz - az - 0.3, cx + ax + 0.3, 14, cz - az, C(0x3a3f47)); S.box(cx - ax - 0.3, 12.5, cz + az, cx + ax + 0.3, 14, cz + az + 0.3, C(0x3a3f47)); }
     S.box(cx - ax - 0.5, 17, cz - az - 0.5, cx + ax + 0.5, 18.2, cz - az + 3, C(0xc5c8cc)); S.box(cx - ax - 0.5, 17, cz + az - 3, cx + ax + 0.5, 18.2, cz + az + 0.5, C(0xc5c8cc));
     S.box(cx - ax - 0.5, 17, cz - az + 3, cx - ax + 3, 18.2, cz + az - 3, C(0xc5c8cc)); S.box(cx + ax - 3, 17, cz - az + 3, cx + ax + 0.5, 18.2, cz + az - 3, C(0xc5c8cc));
     // pitch with mown stripes and lines

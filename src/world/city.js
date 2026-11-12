@@ -40,11 +40,11 @@ export function createWorld(game) {
 
   // ---------- spatial chunks of static geometry ----------
   const NCH = Math.ceil((HALF * 2) / CHUNK), chunks = new Map();
-  const newChunk = () => ({
-    land: new Batch(4), wall: new Batch(), grass: new Batch(8), asphalt: new Batch(16), marks: new Batch(3), tracks: tier ? new Batch() : null, decals: tier ? new Batch() : null,
-    pav: new Batch(4), roof: new Batch(4), tiles: new Batch(), solid: new Batch(), glow: new Batch(), furn: new Batch(), bill: new Batch(), shop: new Batch(),
+  const newChunk = () => { const solid = new Batch(); return {
+    land: new Batch(4), wall: new Batch(), grass: new Batch(8), asphalt: new Batch(16), marks: new Batch(3), tracks: tier > 1 ? new Batch() : null, decals: tier ? new Batch() : null,
+    pav: new Batch(4), roof: null, tiles: new Batch(), solid, glow: new Batch(), furn: solid, bill: new Batch(), shop: new Batch(),
     glass: new Batch(), deco: new Batch(), house: new Batch(), industrial: new Batch(), fac(k) { return this[k]; },
-  });
+  }; };
   function CB(x, z) {
     const cx = clamp(Math.floor((x + HALF) / CHUNK), 0, NCH - 1), cz = clamp(Math.floor((z + HALF) / CHUNK), 0, NCH - 1), key = cx * 16 + cz;
     let c = chunks.get(key); if (!c) { c = newChunk(); c.cx = cx; c.cz = cz; chunks.set(key, c); } return c;
@@ -168,25 +168,22 @@ export function createWorld(game) {
     const pts = []; for (let k = 0; k < 90 && pts.length < 44; k++) { const x = rr(g.minX + 2, g.maxX - 2), z2 = rr(g.minZ + 2, g.maxZ - 2); if (Math.abs(x - (g.minX + g.maxX) / 2) < 4 || Math.abs(z2 - (g.minZ + g.maxZ) / 2) < 4 || pts.some((p) => Math.hypot(p.x - x, p.z - z2) < 6)) continue; pts.push({ x, z: z2 }); if (rand() < 0.4) cyp(x, z2, 1.2); else tree(x, z2, 1.2); }
     for (let b = 0; b < 4; b++) props.benches.push({ x: rr(g.minX + 8, g.maxX - 8), z: (g.minZ + g.maxZ) / 2 + (b % 2 ? 4 : -4), h: b % 2 ? 0 : Math.PI, free: true });
     const lm = sideSpot(z, 3); addLandmark('park', 'Sarayburnu Parkı', 'park', lm.x, lm.z); kit.signPost(lm.x, lm.z - 6, 0, 1, SIGN_ID.park); }
-  { const z = Z.bazaar; kit.rectC; monu.bazaar(shrink(z, 0)); footColor(shrink(z, 4), '#8793a8'); const lm = sideSpot(z, 3); addLandmark('bazaar', 'Kapalıçarşı', 'landmark', lm.x, lm.z); }
+  { const z = Z.bazaar; monu.bazaar(shrink(z, 0)); footColor(shrink(z, 4), '#8793a8'); const lm = sideSpot(z, 3); addLandmark('bazaar', 'Kapalıçarşı', 'landmark', lm.x, lm.z); }
   { const z = Z.stadium; const st = infra.stadium(shrink(z, 0), [-1, 0]); footColor({ minX: st.cx - st.ax, maxX: st.cx + st.ax, minZ: st.cz - st.az, maxZ: st.cz + st.az }, '#3f5648');
     const lm = sideSpot(z, 0); addLandmark('stadium', 'Boğaz Stadyumu', 'stadium', lm.x, lm.z); }
   { const z = Z.palace; const pr = shrink(z, 0); const pal = monu.palace(pr, [1, 0]); footColor({ minX: z.x1 - LOT_MARGIN - 24, maxX: z.x1 - LOT_MARGIN, minZ: z.z0 + 20, maxZ: z.z1 - 14 }, '#cfc6b0');
     const g = { minX: z.x0 + SW_EDGE, maxX: z.x1 - LOT_MARGIN - 24, minZ: z.z0 + SW_EDGE, maxZ: z.z1 - SW_EDGE }; grass(g); greens.push(g);
     for (let k = 0; k < 10; k++) cyp(rr(g.minX + 3, g.maxX - 3), rr(g.minZ + 3, g.maxZ - 3), 1.1);
     for (let k = 0; k < 8; k++) tree(rr(g.minX + 3, g.maxX - 3), rr(g.minZ + 3, g.maxZ - 3), 1);
-    const lm = sideSpot(z, 1); addLandmark('palace', 'Beşiktaş Sahil Sarayı', 'landmark', lm.x, lm.z); void pal; }
+    const lm = sideSpot(z, 1); addLandmark('palace', 'Boğaz Sarayı', 'landmark', lm.x, lm.z); void pal; }
   { const z = Z.station; monu.station(shrink(z, 2), [-1, 0]); footColor(shrink(z, 6), '#8a8478'); const lm = sideSpot(z, 0); addLandmark('station', 'Haydarpaşa Garı', 'landmark', lm.x, lm.z); }
   { const z = Z.docks; infra.docks(shrink(z, 6)); footColor(shrink(z, 14), '#55585f'); const lm = sideSpot(z, 0); addLandmark('docks', 'Haydarpaşa Limanı', 'docks', lm.x, lm.z + 30); kit.signPost(lm.x + 6, lm.z + 34, -1, 0, SIGN_ID.docks); }
-  { // Taksim square: plaza + monument; hotel strip along the north edge
-    const z = Z.taksim, pr = { minX: z.minX, maxX: z.maxX, minZ: z.minZ + 24, maxZ: z.maxZ };
-    monu.taksim(pr); footColor({ minX: z.minX, maxX: z.maxX, minZ: z.minZ + 24, maxZ: z.maxZ }, '#6a5a78');
-    const strip = { minX: z.minX, maxX: z.maxX, minZ: z.minZ, maxZ: z.minZ + 20 }, lots = [];
-    (function bsp(r) { const w = r.maxX - r.minX; if (w <= 22) { lots.push(r); return; } const t = r.minX + w * (0.4 + rand() * 0.2); bsp({ ...r, maxX: t }); bsp({ ...r, minX: t }); })(strip);
-    for (const l of lots) kit.block(shrink(l, 0.2), 6 + Math.floor(rand() * 3), C(rpick(BLOCKS)), 'deco', { faces: { N: true, S: false, E: false, W: false } });
-    const cx = (z.x0 + z.x1) / 2, cz = (pr.minZ + pr.maxZ) / 2;
+  { // Taksim square: plaza + monument + fountains + flags, tree-lined
+    const z = Z.taksim, pr = { minX: z.minX, maxX: z.maxX, minZ: z.minZ, maxZ: z.maxZ };
+    monu.taksim(pr); footColor(pr, '#6a5a78');
+    const cx = (z.x0 + z.x1) / 2;
     addLandmark('plaza', 'Taksim Meydanı', 'plaza', cx + 22, z.z1 - SIDEWALK);
-    for (let k = 0; k < 14; k++) { const x = z.minX + 8 + k * (z.maxX - z.minX - 16) / 13; tree(x, pr.maxZ - 3, 0.9); tree(x, pr.minZ + 3, 0.9); }
+    for (let k = 0; k < 14; k++) { const x = z.minX + 8 + k * (z.maxX - z.minX - 16) / 13; tree(x, pr.maxZ - 2.5, 0.9); tree(x, pr.minZ + 2.5, 0.9); }
   }
   // Galata tower on its plaza + tram avenue
   { const c = grid[10][12]; c.special = true; monu.galataTower(c.cx + 0, c.cz); footColor({ minX: c.cx - 6, maxX: c.cx + 6, minZ: c.cz - 6, maxZ: c.cz + 6 }, '#8793a8'); addLandmark('galata', 'Galata Kulesi', 'landmark', c.x0 + SIDEWALK, c.cz + 14);
@@ -246,6 +243,7 @@ export function createWorld(game) {
   const free = (x, z, r) => {
     if (Math.abs(x) > HALF - 3 || Math.abs(z) > HALF - 3) return false;
     if (G.sdf(x, z) < 1.8 + r) return false;
+    if (roadsApi.isRoad(x, z)) return false;
     for (const q of reserved) if (Math.hypot(q.x - x, q.z - z) < q.r) return false;
     for (let a = Math.floor((x - r) / 20); a <= Math.floor((x + r) / 20); a++) for (let b = Math.floor((z - r) / 20); b <= Math.floor((z + r) / 20); b++) {
       const l = GH.get(ghk(a, b)); if (!l) continue;
@@ -319,7 +317,6 @@ export function createWorld(game) {
   }
   for (const c of cells) fillCell(c);
   // fill specials' leftover (cells that lost a slab to a special building)
-  for (const c of cells) if (c.special && c.inner && !c.zone && !c.park && c.ch !== '~') { const sp = SPECIALS; void sp; }
 
   // ---------- coast roads: yali mansions, promenades, tea gardens, benches ----------
   const YALI_D = new Set(['N', 'R', 'O']);
@@ -443,12 +440,12 @@ export function createWorld(game) {
     land: poly(groundMat(pav, { ns: 1.0 }), 0, 0), wall: mkMat({ vertexColors: true, roughness: 0.9 }), grass: poly(groundMat(grs, { roughness: 0.95, ns: 1.0 }), -1, -1),
     pav: poly(groundMat(pav, { ns: 1.0 }), -1, -1), asphalt: poly(groundMat(asph, { ns: 1.0 }), -1, -2),
     marks: poly(mkMat({ vertexColors: true, map: makePaintMask(tier), alphaTest: 0.5, roughness: 0.7 }), -1, -4),
-    roof: groundMat(pav, { ns: 0.6 }), tiles: groundMat(makeRoofTiles(tier, aniso), { ns: 1.0, side: THREE.DoubleSide }), solid: solidMat,
-    glow: new THREE.MeshBasicMaterial({ vertexColors: true, color: 0xffffff, fog: true }), furn: mkMat({ vertexColors: true, side: THREE.DoubleSide }),
+    tiles: groundMat(makeRoofTiles(tier, aniso), { ns: 1.0, side: THREE.DoubleSide }), solid: solidMat,
+    glow: new THREE.MeshBasicMaterial({ vertexColors: true, color: 0xffffff, fog: true }),
     bill: new THREE.MeshBasicMaterial({ map: makeSignAtlas(tier, aniso), vertexColors: true }),
   };
+  if (tier > 1) MAT.tracks = poly(mkMat({ vertexColors: true, map: makeTracks(tier), transparent: true, depthWrite: false, roughness: 0.6 }), -1, -3);
   if (tier) {
-    MAT.tracks = poly(mkMat({ vertexColors: true, map: makeTracks(tier), transparent: true, depthWrite: false, roughness: 0.6 }), -1, -3);
     MAT.decals = poly(mkMat({ vertexColors: true, map: makeDecals(tier, aniso), transparent: true, depthWrite: false, roughness: 0.5, metalness: 0.25 }), -1, -5);
     MAT.shop = facMat(makeShopfront(tier, aniso)); winMats.push(MAT.shop);
   }
@@ -600,7 +597,7 @@ export function createWorld(game) {
   for (let k = 0; k < 4; k++) benchB.box(-0.92, 0.42, -0.26 + k * 0.13, 0.92, 0.47, -0.16 + k * 0.13, C(0xb3302a));
   benchB.box(-0.92, 0.62, -0.3, 0.92, 0.7, -0.26, C(0xb3302a)); benchB.box(-0.92, 0.78, -0.3, 0.92, 0.86, -0.26, C(0xb3302a)); benchB.box(-0.92, 0.94, -0.3, 0.92, 1.0, -0.26, C(0xb3302a));
   for (const sx of [-0.8, 0.8]) { benchB.box(sx - 0.04, 0, -0.26, sx + 0.04, 0.42, 0.26, C(0x2a2d33)); benchB.box(sx - 0.04, 0.42, -0.31, sx + 0.04, 1.0, -0.26, C(0x2a2d33)); }
-  inst(benchB.build(), mkMat({ vertexColors: true, roughness: 0.7 }), placed.benches, (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = p.h; }, { cast: true });
+  makeCullable(inst(benchB.build(), mkMat({ vertexColors: true, roughness: 0.7 }), placed.benches, (p) => { resetD(); dummy.position.set(p.x, 0, p.z); dummy.rotation.y = p.h; }, { cast: true }), placed.benches);
   // ---- traffic signals: shared-material emissive lamp textures cycle red / amber / green ----
   const sigTex = makeSignalTex();
   const sigBody = new Batch();
@@ -611,13 +608,13 @@ export function createWorld(game) {
     sigBody.box(fx * 0.27 + fx * 0.14 - Math.abs(rx) * 0.2, 5.58, fz * 0.27 + fz * 0.14 - Math.abs(rz) * 0.2, fx * 0.27 + fx * 0.14 + Math.abs(rx) * 0.2, 5.62, fz * 0.27 + fz * 0.14 + Math.abs(rz) * 0.2, C(0x1b1c20)); // visor
   }
   const sigPlace = (p) => { resetD(); dummy.position.set(p.x, 0, p.z); };
-  inst(sigBody.build(), mkMat({ vertexColors: true, roughness: 0.5, metalness: tier ? 0.4 : 0 }), trafficPoles, sigPlace, { cast: true });
+  makeCullable(inst(sigBody.build(), mkMat({ vertexColors: true, roughness: 0.5, metalness: tier ? 0.4 : 0 }), trafficPoles, sigPlace, { cast: true }), trafficPoles);
   const lampQuad = (fx, fz) => { const rx = fz, rz = -fx, b = new Batch(), o = 0.27 + 0.14 + 0.012; b.face([[fx * o - rx * 0.13, 4.5, fz * o - rz * 0.13], [fx * o + rx * 0.13, 4.5, fz * o + rz * 0.13], [fx * o + rx * 0.13, 5.55, fz * o + rz * 0.13], [fx * o - rx * 0.13, 5.55, fz * o - rz * 0.13]], [fx, 0, fz], [1, 1, 1], [[0, 0], [1, 0], [1, 1], [0, 1]]); return b; };
   const sigGeo = (dirs) => { const b = new Batch(); for (const [fx, fz] of dirs) { const q = lampQuad(fx, fz), base = b.n; b.pos.push(...q.pos); b.nor.push(...q.nor); b.col.push(...q.col); b.uv.push(...q.uv); b.idx.push(...q.idx.map((i) => i + base)); b.n += q.n; } return b.build(); };
   const sigMat = () => { const t = sigTex.clone(); t.needsUpdate = true; t.repeat.set(1, 1 / 3); const m = new THREE.MeshBasicMaterial({ map: t, color: 0xffffff }); return m; };
   const sigNS = sigMat(), sigEW = sigMat();
-  inst(sigGeo([[0, 1], [0, -1]]), sigNS, trafficPoles, sigPlace);
-  inst(sigGeo([[1, 0], [-1, 0]]), sigEW, trafficPoles, sigPlace);
+  makeCullable(inst(sigGeo([[0, 1], [0, -1]]), sigNS, trafficPoles, sigPlace), trafficPoles);
+  makeCullable(inst(sigGeo([[1, 0], [-1, 0]]), sigEW, trafficPoles, sigPlace), trafficPoles);
   const setSig = (m, state) => { m.map.offset.y = 1 - (state + 1) / 3; }; // state 0 red, 1 amber, 2 green
   let tl = 0;
   const cycleSignals = () => { const ph = tl % 24; setSig(sigNS, ph < 9 ? 2 : ph < 11 ? 1 : 0); setSig(sigEW, ph < 12 ? 0 : ph < 21 ? 2 : ph < 23 ? 1 : 0); };

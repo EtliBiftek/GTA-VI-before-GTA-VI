@@ -71,13 +71,14 @@ Gameplay reads only this; never add DOM key/mouse listeners in gameplay modules.
 
 ## World — `src/world/*` (`createWorld` in `src/world/city.js`)
 
-Procedural city ~1200 × 1200 m (`world.half = 600`): grid-ish road network with a few avenues,
-downtown high-rises, residential/low-rise, a beach strip + ocean on one side, parks, palm trees,
-street lights, props. Owns sky, fog, sun/ambient lights and the day/night cycle
+Stylised, compressed Istanbul, 1600 × 1600 m (`world.half = 800`, north = −Z, east = +X): Bosphorus,
+Golden Horn, Sea of Marmara, European and Anatolian sides joined by four bridges, historic peninsula,
+Beyoğlu, Levent towers, Üsküdar, Kadıköy and Haydarpaşa port. Also `world.distanceToWater(x, z)` and
+`world.districtAt(x, z)` (Turkish district name). Owns sky, fog, sun/ambient lights and the day/night cycle
 (advances `game.state.timeOfDay`; one full day ≈ 20 real minutes; windows/lamps glow at night).
 
 ```js
-world.half                                   // 600
+world.half                                   // 800
 world.spawnPoint                             // { x, z, heading } player start (on a sidewalk near the safehouse)
 world.colliders                              // static AABBs [{ minX, maxX, minZ, maxZ, height }] (buildings, big props)
 world.collideCircle(x, z, r, out?)           // -> out {x, z, hit, nx, nz}: position pushed out of static colliders

@@ -188,9 +188,9 @@ export function makeMonuments(ctx, kit) {
     S.box(cx - 1.3, 2, cz - 1.0, cx + 1.3, 15, cz + 1.0, st); S.box(cx - 1.6, 15, cz - 1.2, cx + 1.6, 15.5, cz + 1.2, dk);
     for (const [dx, dz, hh] of [[-6.5, 3.4, 4], [6.5, 3.4, 4], [-6.5, -3.4, 4], [6.5, -3.4, 4], [0, 3.4, 5]]) { S.box(cx + dx - 0.5, 2, cz + dz - 0.5, cx + dx + 0.5, 2 + hh * 0.55, cz + dz + 0.5, dk); S.blob(cx + dx, 2 + hh * 0.55 + 0.5, cz + dz, 0.45, 0.6, 0.35, C(0x7a705f), 0); }
     addCollider(cx - 9, cx + 9, cz - 6, cz + 6, 15.5, true);
-    for (const sx of [-1, 1]) { const fxp = cx + sx * 34; S.cyl(fxp, 0, cz - 20, 5, 5, 0.7, 14, st); S.cyl(fxp, 0.7, cz - 20, 4.4, 4.4, 0.15, 14, C(0x6fb4c8)); S.cyl(fxp, 0.7, cz - 20, 0.4, 0.4, 2.4, 6, st); addCollider(fxp - 5, fxp + 5, cz - 25, cz - 15, 0.9);
-      S.cyl(fxp, 0, cz + 20, 5, 5, 0.7, 14, st); S.cyl(fxp, 0.7, cz + 20, 4.4, 4.4, 0.15, 14, C(0x6fb4c8)); S.cyl(fxp, 0.7, cz + 20, 0.4, 0.4, 2.4, 6, st); addCollider(fxp - 5, fxp + 5, cz + 15, cz + 25, 0.9); }
-    for (const [dx, dz] of [[-22, 0], [22, 0], [0, -20], [0, 20]]) kit.flag(cx + dx, cz + dz, 11, 0, 1, 1.4), addCollider(cx + dx - 0.2, cx + dx + 0.2, cz + dz - 0.2, cz + dz + 0.2, 11);
+    for (const sx of [-1, 1]) { const fxp = cx + sx * 34; S.cyl(fxp, 0, cz - 12, 4.6, 4.6, 0.7, 14, st); S.cyl(fxp, 0.7, cz - 12, 4.0, 4.0, 0.15, 14, C(0x6fb4c8)); S.cyl(fxp, 0.7, cz - 12, 0.4, 0.4, 2.4, 6, st); addCollider(fxp - 4.6, fxp + 4.6, cz - 16.6, cz - 7.4, 0.9);
+      S.cyl(fxp, 0, cz + 12, 4.6, 4.6, 0.7, 14, st); S.cyl(fxp, 0.7, cz + 12, 4.0, 4.0, 0.15, 14, C(0x6fb4c8)); S.cyl(fxp, 0.7, cz + 12, 0.4, 0.4, 2.4, 6, st); addCollider(fxp - 4.6, fxp + 4.6, cz + 7.4, cz + 16.6, 0.9); }
+    for (const [dx, dz] of [[-22, 0], [22, 0], [0, -13], [0, 13]]) kit.flag(cx + dx, cz + dz, 11, 0, 1, 1.4), addCollider(cx + dx - 0.2, cx + dx + 0.2, cz + dz - 0.2, cz + dz + 0.2, 11);
     void w; void d;
   }
 
@@ -219,9 +219,14 @@ export function makeMonuments(ctx, kit) {
       const p = M(u, v); S.cyl(p[0], H - 1, p[1], 4.2, 4.2, 7, 12, C(0xd4c8b0)); cone(S, p[0], H + 6, p[1], 5.2, 11, C(0x4f5964), 12);
     }
     const p = M(0, vb1 - 1); boxC(S, [p[0] - 5, p[1] - 5], [p[0] + 5, p[1] + 5], H, H + 8, C(0xd4c8b0)); cone(S, p[0], H + 8, p[1], 6.5, 7, C(0x4f5964), 4);
-    // tracks behind the building
-    const tp = M(0, -D / 2 + 1.2);
-    void tp;
+    // forecourt toward the water: central path, lawns, tree rows, flags, fountain
+    const fv0 = Math.min(D / 2 - 2, vb0 + wing) + 3, fv1 = D / 2 - 2;
+    if (fv1 - fv0 > 12) {
+      for (const sg of [-1, 1]) { const a = M(sg * 9, fv0), b = M(sg * (len / 2 - 2), fv1); const g = { minX: Math.min(a[0], b[0]), maxX: Math.max(a[0], b[0]), minZ: Math.min(a[1], b[1]), maxZ: Math.max(a[1], b[1]) }; B.grass.rect(g.minX, g.minZ, g.maxX, g.maxZ, 0.015, C(0x7fae5c));
+        for (let k = 0; k < 6; k++) { const q = M(sg * (12 + k * 6.5), fv0 + 2); props.trees.push({ x: q[0], z: q[1], s: 1 }); const q2 = M(sg * (12 + k * 6.5), fv1 - 2); props.trees.push({ x: q2[0], z: q2[1], s: 1 }); }
+        const fp = M(sg * 7, (fv0 + fv1) / 2); kit.flag(fp[0], fp[1], 11, fx, fz, 1.2); addCollider(fp[0] - 0.2, fp[0] + 0.2, fp[1] - 0.2, fp[1] + 0.2, 11); }
+      const f = M(0, (fv0 + fv1) / 2); S.cyl(f[0], 0, f[1], 4.5, 4.5, 0.9, 14, C(0xd8d3c8)); S.cyl(f[0], 0.9, f[1], 3.9, 3.9, 0.15, 14, C(0x6fb4c8)); S.cyl(f[0], 0.9, f[1], 0.4, 0.4, 2.6, 6, C(0xd8d3c8)); addCollider(f[0] - 4.5, f[0] + 4.5, f[1] - 4.5, f[1] + 4.5, 0.9);
+    }
   }
 
   /** Maiden's-Tower-style islet: stone base disc + whitewashed round tower with a dome, flag. */

@@ -37,7 +37,7 @@ export function makeKit(ctx) {
     }
   }
   const roofT = (B) => (tier > 0 ? B.tiles : B.solid);
-  const flatT = (B) => (tier > 0 ? B.roof : B.solid);
+  const flatT = (B) => (tier > 0 ? B.pav : B.solid);
   function parapet(B, r, H, hgt = 0.55, col = PARA) {
     const t = 0.22, s = B.solid;
     s.box(r.minX, H, r.minZ, r.maxX, H + hgt, r.minZ + t, col); s.box(r.minX, H, r.maxZ - t, r.maxX, H + hgt, r.maxZ, col);

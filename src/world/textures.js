@@ -480,7 +480,7 @@ export const SIGNS = [
   ['MARTI ÇAY EVİ', '#d9202e', '#fff', '#ffe27a'], ['LODOS KAHVE', '#ffd23a', '#7a2638', '#fff'],
   ['KARAYEL BANKASI', '#12305e', '#f2c14e', '#fff'], ['MERMER TELEKOM', '#1b6fd0', '#fff', '#7ff0ff'],
   ['SİMİT SARAYI', '#c8741a', '#fff', '#ffe9b8'], ['POYRAZ SİGORTA', '#1d6b4f', '#fff', '#ffe27a'],
-  ['MARMARA FM 94.2', '#6a1bb8', '#7ff0ff', '#fff'], ['YILDIZ OTOMOTİV', '#15151c', '#ff2d4a', '#fff'],
+  ['BOĞAZ FM 94.2', '#6a1bb8', '#7ff0ff', '#fff'], ['KOZA OTOMOTİV', '#15151c', '#ff2d4a', '#fff'],
   ['BOĞAZ BAKLAVA', '#0e8a8a', '#fff', '#ffd9a0'], ['KIYI LASTİK', '#222', '#ffd23a', '#fff'],
   ['GÜVENLİ EV', '#0f8f8f', '#fff', '#ff7ab8'], ['HASTANE', '#f4f7fa', '#d62839', '#d62839'],
   ['EMNİYET', '#1d3f8f', '#fff', '#ffd23a'], ['AVCI MALZEME', '#2a2118', '#ffb000', '#fff'],
@@ -493,7 +493,7 @@ export const SIGNS = [
   ['AKINTI KARGO', '#0f3d3e', '#ffb000', '#fff'], ['LİMON ŞERBET', '#e8d712', '#1b7a3a', '#fff'],
   ['HALİÇ SİNEMA', '#150d2e', '#7ff0ff', '#ff6ad5'], ['MERKEZ OTEL', '#173a63', '#fff', '#ffd9a0'],
   ['HIZLI KURYE', '#e8590c', '#fff', '#222'], ['ADA SPOR SALONU', '#111', '#8aff4a', '#fff'],
-  ['İSKELE BALIK EKMEK', '#6a1f1f', '#ffd23a', '#fff'], ['YILDIZ ECZANESİ', '#f4f7fa', '#1b8f4a', '#1b8f4a'],
+  ['İSKELE BALIK EKMEK', '#6a1f1f', '#ffd23a', '#fff'], ['SERVİ ECZANESİ', '#f4f7fa', '#1b8f4a', '#1b8f4a'],
   ['TURNA KLİMA', '#1b6fd0', '#fff', '#7ff0ff'],
   // 32..39 street name blades
   ['LALE SK.', '#155c3a', '#fff', '#fff'], ['MARTI SK.', '#155c3a', '#fff', '#fff'], ['BOĞAZ CD.', '#155c3a', '#fff', '#fff'], ['KUMRU SK.', '#155c3a', '#fff', '#fff'],

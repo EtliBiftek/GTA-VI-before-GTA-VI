@@ -46,7 +46,7 @@ export function buildRoadGraph(G, rnd) {
   for (const k of zoneInternal.h) H.delete(k);
   for (const k of zoneInternal.v) V.delete(k);
   // district drop probabilities
-  const pDrop = (c) => ({ F: 0.3, S: 0.26, B: 0.26, G: 0.2, C: 0.26, M: 0.2, T: 0.2, U: 0.3, K: 0.26, E: 0.3, s: 0.3, A: 0.38, R: 0.36, N: 0.34, O: 0.26, Y: 0.3, L: 0.1, D: 0.5 }[c] ?? 0.25);
+  const pDrop = (c) => ({ F: 0.36, S: 0.32, B: 0.32, G: 0.26, C: 0.3, M: 0.26, T: 0.2, U: 0.34, K: 0.3, E: 0.3, s: 0.3, A: 0.38, R: 0.36, N: 0.34, O: 0.26, Y: 0.3, L: 0.1, D: 0.5 }[c] ?? 0.25);
   const cellsOfH = (i, j) => [[i, j - 1], [i, j]], cellsOfV = (i, j) => [[i - 1, j], [i, j]];
   const deg = (i, j) => (H.has(hk(i, j)) ? 1 : 0) + (H.has(hk(i - 1, j)) ? 1 : 0) + (V.has(hk(i, j)) ? 1 : 0) + (V.has(hk(i, j - 1)) ? 1 : 0);
   const bridgeLinks = BRIDGES;
@@ -75,7 +75,8 @@ export function buildRoadGraph(G, rnd) {
     const cells = t === 'h' ? cellsOfH(i, j) : cellsOfV(i, j);
     if (!cells.every(([a, b]) => inMap(a, b))) continue;
     if (cells.some(([a, b]) => zoneCells.has(a * NC + b))) continue;
-    if (cells.some(([a, b]) => mc[a * NC + b] > 0)) continue;
+    const lim = 'FSMUBCGK'.includes(G.ch(cells[0][0], cells[0][1])) ? 2 : 1;
+    if (cells.some(([a, b]) => mc[a * NC + b] >= lim)) continue;
     if (rnd() > pDrop(G.ch(cells[0][0], cells[0][1]))) continue;
     const ends = t === 'h' ? [[i, j], [i + 1, j]] : [[i, j], [i, j + 1]];
     if (ends.some(([a, b]) => deg(a, b) < 3)) continue;
