@@ -5,6 +5,7 @@ import { Input } from './core/input.js';
 import { createGraphics } from './core/graphics.js';
 import { createWorld } from './world/city.js';
 import { createVehicles } from './entities/vehicles.js';
+import { setVehicleQuality } from './entities/vehicleModels.js';
 import { createPeds } from './entities/peds.js';
 import { createPolice } from './entities/police.js';
 import { createWeapons } from './entities/weapons.js';
@@ -82,6 +83,9 @@ const game = {
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.pixelRatio));
     renderer.shadowMap.enabled = q.shadows;
     this.input.sensitivity = this.settings.sensitivity;
+    if (setVehicleQuality(this.settings.quality) && this.vehicles?.list) {
+      for (const v of this.vehicles.list) if (!v.destroyed) this.vehicles.paint?.(v, v.color);
+    }
     try { localStorage.setItem('neoncoast.settings', JSON.stringify(this.settings)); } catch { /* ignore */ }
     this.events.emit('settings:changed', this.settings);
   },
@@ -100,6 +104,7 @@ addEventListener('orientationchange', () => setTimeout(resize, 200));
 const safe = (name, fn) => {
   try { return fn(game); } catch (e) { console.error(`[init ${name}]`, e); return { update() {} }; }
 };
+setVehicleQuality(game.settings.quality);
 game.world = safe('world', createWorld);
 game.vehicles = safe('vehicles', createVehicles);
 game.peds = safe('peds', createPeds);
