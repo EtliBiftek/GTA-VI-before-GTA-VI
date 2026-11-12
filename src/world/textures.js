@@ -477,27 +477,27 @@ export function makeVeg(t, aniso) {
 // SIGNS, GLOW, WATER
 // =====================================================================================================
 export const SIGNS = [
-  ['PALMERA COLA', '#d9202e', '#fff', '#ffe27a'], ['NEONBURGER', '#ffd23a', '#c2185b', '#fff'],
-  ['KARTAL BANK', '#12305e', '#f2c14e', '#fff'], ['MAVİ TELEKOM', '#1b6fd0', '#fff', '#7ff0ff'],
-  ['SURF & SİMİT', '#14b8a6', '#fff', '#ff9f43'], ['SOLARA GÜNEŞ', '#ff7a3d', '#fff', '#ffe27a'],
-  ['DALGA FM 98.7', '#6a1bb8', '#7ff0ff', '#fff'], ['VELOCE MOTORS', '#15151c', '#ff2d4a', '#fff'],
-  ['TURKUAZ KAHVE', '#0e8a8a', '#fff', '#ffd9a0'], ['TURBO LASTİK', '#222', '#ffd23a', '#fff'],
+  ['MARTI ÇAY EVİ', '#d9202e', '#fff', '#ffe27a'], ['LODOS KAHVE', '#ffd23a', '#7a2638', '#fff'],
+  ['KARAYEL BANKASI', '#12305e', '#f2c14e', '#fff'], ['MERMER TELEKOM', '#1b6fd0', '#fff', '#7ff0ff'],
+  ['SİMİT SARAYI', '#c8741a', '#fff', '#ffe9b8'], ['POYRAZ SİGORTA', '#1d6b4f', '#fff', '#ffe27a'],
+  ['MARMARA FM 94.2', '#6a1bb8', '#7ff0ff', '#fff'], ['YILDIZ OTOMOTİV', '#15151c', '#ff2d4a', '#fff'],
+  ['BOĞAZ BAKLAVA', '#0e8a8a', '#fff', '#ffd9a0'], ['KIYI LASTİK', '#222', '#ffd23a', '#fff'],
   ['GÜVENLİ EV', '#0f8f8f', '#fff', '#ff7ab8'], ['HASTANE', '#f4f7fa', '#d62839', '#d62839'],
-  ['POLİS', '#1d3f8f', '#fff', '#ffd23a'], ['SİLAH & MÜHİMMAT', '#2a2118', '#ffb000', '#fff'],
-  ['OTO TAMİR', '#e8590c', '#fff', '#222'], ['STADYUM', '#1b7a3a', '#fff', '#ffd23a'],
+  ['EMNİYET', '#1d3f8f', '#fff', '#ffd23a'], ['AVCI MALZEME', '#2a2118', '#ffb000', '#fff'],
+  ['OTO SANAYİ', '#e8590c', '#fff', '#222'], ['STADYUM', '#1b7a3a', '#fff', '#ffd23a'],
   ['İSKELE', '#7a5230', '#fff', '#ffd9a0'], ['LİMAN', '#254a73', '#fff', '#ffb000'],
-  ['PLAJ', '#26c6da', '#fff', '#ff9f43'], ['PARK', '#2e8b57', '#fff', '#fff3a0'],
-  ['ŞEHİR MERKEZİ', '#2b1b5e', '#ff6ad5', '#7ff0ff'],
+  ['ÇAY BAHÇESİ', '#26c6da', '#fff', '#ff9f43'], ['PARK', '#2e8b57', '#fff', '#fff3a0'],
+  ['İŞ MERKEZİ', '#2b1b5e', '#ff6ad5', '#7ff0ff'],
   // 21..31 extra advertising
-  ['KUMSAL BAR', '#2a1458', '#ff6ad5', '#7ff0ff'], ['NEON PİZZA', '#b3141f', '#fff3a0', '#ffd23a'],
-  ['AKINTI KARGO', '#0f3d3e', '#ffb000', '#fff'], ['LİMON SODA', '#e8d712', '#1b7a3a', '#fff'],
-  ['DENİZ SİNEMA', '#150d2e', '#7ff0ff', '#ff6ad5'], ['SERİN OTEL', '#173a63', '#fff', '#ffd9a0'],
-  ['HIZLI KURYE', '#e8590c', '#fff', '#222'], ['ADA FİTNESS', '#111', '#8aff4a', '#fff'],
-  ['GÜN BATIMI GRİLL', '#6a1f1f', '#ffd23a', '#fff'], ['YILDIZ ECZANESİ', '#f4f7fa', '#1b8f4a', '#1b8f4a'],
-  ['MELTEM KLİMA', '#1b6fd0', '#fff', '#7ff0ff'],
+  ['KULE LOKANTASI', '#2a1458', '#ffd23a', '#7ff0ff'], ['ŞİŞLİ PİDE', '#b3141f', '#fff3a0', '#ffd23a'],
+  ['AKINTI KARGO', '#0f3d3e', '#ffb000', '#fff'], ['LİMON ŞERBET', '#e8d712', '#1b7a3a', '#fff'],
+  ['HALİÇ SİNEMA', '#150d2e', '#7ff0ff', '#ff6ad5'], ['MERKEZ OTEL', '#173a63', '#fff', '#ffd9a0'],
+  ['HIZLI KURYE', '#e8590c', '#fff', '#222'], ['ADA SPOR SALONU', '#111', '#8aff4a', '#fff'],
+  ['İSKELE BALIK EKMEK', '#6a1f1f', '#ffd23a', '#fff'], ['YILDIZ ECZANESİ', '#f4f7fa', '#1b8f4a', '#1b8f4a'],
+  ['TURNA KLİMA', '#1b6fd0', '#fff', '#7ff0ff'],
   // 32..39 street name blades
-  ['PALMİYE CD.', '#155c3a', '#fff', '#fff'], ['DENİZ SK.', '#155c3a', '#fff', '#fff'], ['LALE SK.', '#155c3a', '#fff', '#fff'], ['MARTI CD.', '#155c3a', '#fff', '#fff'],
-  ['SAHİL YOLU', '#155c3a', '#fff', '#fff'], ['ÇINAR SK.', '#155c3a', '#fff', '#fff'], ['GÜNEŞ CD.', '#155c3a', '#fff', '#fff'], ['LİMAN YOLU', '#155c3a', '#fff', '#fff'],
+  ['LALE SK.', '#155c3a', '#fff', '#fff'], ['MARTI SK.', '#155c3a', '#fff', '#fff'], ['BOĞAZ CD.', '#155c3a', '#fff', '#fff'], ['KUMRU SK.', '#155c3a', '#fff', '#fff'],
+  ['SAHİL YOLU', '#155c3a', '#fff', '#fff'], ['ÇINAR SK.', '#155c3a', '#fff', '#fff'], ['SERVİ SK.', '#155c3a', '#fff', '#fff'], ['KÖPRÜ CD.', '#155c3a', '#fff', '#fff'],
 ];
 export const SIGN_ROWS = 10;
 export const SIGN_ID = { ads: 10, safehouse: 10, hospital: 11, police: 12, gunshop: 13, garage: 14, stadium: 15, pier: 16, docks: 17, beach: 18, park: 19, downtown: 20 };
