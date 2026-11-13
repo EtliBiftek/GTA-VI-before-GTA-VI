@@ -1,11 +1,14 @@
 # Neon Coast — Architecture & Module Contract
 
 Original open-world action sandbox (third person, on foot + driving, traffic, pedestrians,
-police/wanted system, weapons, missions) set in the fictional sunny coastal city **Palmera**.
+police/wanted system, weapons, missions) set in a stylised, compressed **Istanbul** (Bosphorus, Golden Horn, both shores, bridges).
 Everything is original: no names, characters, logos, map layouts or art from any existing game.
 
 - Tech: **Three.js** (ES modules) + **Vite**. No physics engine, no external assets — all geometry,
   textures (canvas) and sounds (WebAudio) are procedural.
+- Downloaded CC0 models: `src/core/assets.js` loads `public/assets/models/**.glb` asynchronously (relative URLs, XHR fallback for
+  file://). Everything boots procedural and swaps the downloaded geometry in when ready (vehicles: `vehicleModels.js`, props: `swapAsset`
+  in `world/city.js`). Missing files keep the procedural version. Credits: `CREDITS.md`; converters: `tools/assets/`.
 - Targets: browser, Android (Capacitor WebView, landscape), Windows (Electron).
 - **Mobile performance is a hard requirement**: use `InstancedMesh`/merged geometry, share materials
   and geometries, never allocate per frame in hot paths (reuse temp vectors), pool objects, cull by
@@ -71,13 +74,14 @@ Gameplay reads only this; never add DOM key/mouse listeners in gameplay modules.
 
 ## World — `src/world/*` (`createWorld` in `src/world/city.js`)
 
-Procedural city ~1200 × 1200 m (`world.half = 600`): grid-ish road network with a few avenues,
-downtown high-rises, residential/low-rise, a beach strip + ocean on one side, parks, palm trees,
-street lights, props. Owns sky, fog, sun/ambient lights and the day/night cycle
+Stylised, compressed Istanbul, 1600 × 1600 m (`world.half = 800`, north = −Z, east = +X): Bosphorus,
+Golden Horn, Sea of Marmara, European and Anatolian sides joined by four bridges, historic peninsula,
+Beyoğlu, Levent towers, Üsküdar, Kadıköy and Haydarpaşa port. Also `world.distanceToWater(x, z)` and
+`world.districtAt(x, z)` (Turkish district name). Owns sky, fog, sun/ambient lights and the day/night cycle
 (advances `game.state.timeOfDay`; one full day ≈ 20 real minutes; windows/lamps glow at night).
 
 ```js
-world.half                                   // 600
+world.half                                   // 800
 world.spawnPoint                             // { x, z, heading } player start (on a sidewalk near the safehouse)
 world.colliders                              // static AABBs [{ minX, maxX, minZ, maxZ, height }] (buildings, big props)
 world.collideCircle(x, z, r, out?)           // -> out {x, z, hit, nx, nz}: position pushed out of static colliders

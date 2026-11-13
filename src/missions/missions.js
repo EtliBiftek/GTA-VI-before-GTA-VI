@@ -70,17 +70,33 @@ export function createMissions(game) {
     const n = game.world?.roads?.nearestNode?.(x, z);
     return n ? { x: n.x, z: n.z } : { x, z };
   }
+  const wet = (x, z) => { try { return !!game.world?.isWater?.(x, z); } catch { return false; } };
+  // water-safe pickers: retry a few times, never accept a point in the sea / Bosphorus
   function roadPt(nx, nz, mn, mx) {
-    const r = game.world?.randomRoadPoint?.(nx, nz, mn, mx);
-    if (r && Number.isFinite(r.x)) return r;
-    const a = rand(0, 6.283), d = rand(mn, mx);
-    return { x: nx + Math.cos(a) * d, z: nz + Math.sin(a) * d, heading: a };
+    for (let k = 0; k < 10; k++) {
+      const r = game.world?.randomRoadPoint?.(nx, nz, mn, mx);
+      if (r && Number.isFinite(r.x) && !wet(r.x, r.z)) return r;
+    }
+    let q = null;
+    for (let k = 0; k < 12; k++) {
+      const a = rand(0, 6.283), d = rand(mn, mx);
+      q = { x: nx + Math.cos(a) * d, z: nz + Math.sin(a) * d, heading: a };
+      if (!wet(q.x, q.z)) return q;
+    }
+    return q;
   }
   function walkPt(nx, nz, mn, mx) {
-    const r = game.world?.randomSidewalkPoint?.(nx, nz, mn, mx);
-    if (r && Number.isFinite(r.x)) return r;
-    const a = rand(0, 6.283), d = rand(mn, mx);
-    return { x: nx + Math.cos(a) * d, z: nz + Math.sin(a) * d };
+    for (let k = 0; k < 10; k++) {
+      const r = game.world?.randomSidewalkPoint?.(nx, nz, mn, mx);
+      if (r && Number.isFinite(r.x) && !wet(r.x, r.z)) return r;
+    }
+    let q = null;
+    for (let k = 0; k < 12; k++) {
+      const a = rand(0, 6.283), d = rand(mn, mx);
+      q = { x: nx + Math.cos(a) * d, z: nz + Math.sin(a) * d };
+      if (!wet(q.x, q.z)) return q;
+    }
+    return q;
   }
   let nodeMap = null;
   function nodeById(id) {
@@ -193,8 +209,8 @@ export function createMissions(game) {
 
   def({
     id: 'first', title: 'İlk İş', giver: 'Cemile Abla', landmark: 'safehouse', after: [], reward: 200,
-    description: 'Cebin boş, şehir yabancı. Cemile Abla\'nın plaj barına bir araçla ulaş.',
-    brief: ['Cemile Abla: Yeni gelen sen misin Deniz? Cebinin boş olduğunu biliyorum.', 'Sokaktaki arabayı al, plaj barıma gel. Sana bir işim var.'],
+    description: 'İstanbul\'a cebin boş geldin. Cemile Abla\'nın Boğaz kıyısındaki çay bahçesine sür.',
+    brief: ['Cemile Abla: Sen Deniz\'sin, değil mi? Cebinin boş olduğu yüzünden okunuyor.', 'Sokaktaki arabayı al, Boğaz kenarındaki çay bahçeme gel. Sana bir işim var.'],
     watch: 'car',
     build(r) {
       const sp = game.world?.spawnPoint || { x: 0, z: 0 };
@@ -207,17 +223,17 @@ export function createMissions(game) {
           label: 'Araba',
           onEnter: () => say(touch() ? 'Sol joystick ile yürü, sağ tarafı sürükleyerek etrafa bak.' : 'WASD ile yürü, fareyle etrafa bak, Shift ile koş.', 0.5),
         }),
-        action('Harika! Şimdi plaj barına sür.', () => say(touch() ? 'Gaz ve fren düğmelerini, joystick ile direksiyonu kullan.' : 'W gaz, S fren/geri, A-D direksiyon, Boşluk el freni.', 0.5)),
-        goTo('Plaj barına sür.', () => dest, 14, { veh: 'car', label: 'Plaj Barı' }),
+        action('Tamam! Şimdi Boğaz kıyısındaki çay bahçesine sür.', () => say(touch() ? 'Gaz ve fren düğmelerini, joystick ile direksiyonu kullan.' : 'W gaz, S fren/geri, A-D direksiyon, Boşluk el freni.', 0.5)),
+        goTo('Çay bahçesine sür.', () => dest, 14, { veh: 'car', label: 'Çay Bahçesi' }),
       ];
     },
   });
 
   def({
-    id: 'cargo', title: 'Sıcak Kargo', giver: 'Cemile Abla', landmark: 'beach', after: ['first'], reward: 400,
-    description: 'Kırılgan kolileri şehir merkezine süre dolmadan, hasarsız ulaştır.',
-    brief: ['Cemile Abla: Bu kolileri şehir merkezine yetiştirmem lazım, müşteri sabırsız.', 'Süre kısıtlı ama kutular kırılgan. Minibüsü çarpıp durma!'],
-    watch: 'van', minHealth: 40, healthMsg: 'Kargo hasar gördü!',
+    id: 'cargo', title: 'Sıcak Simit', giver: 'Cemile Abla', landmark: 'beach', after: ['first'], reward: 400,
+    description: 'Simit ve çay malzemesini Levent-Taksim hattına süre dolmadan, ezmeden ulaştır.',
+    brief: ['Cemile Abla: Simit ve çay kolileri Levent\'teki ofislere yetişecek, müşteri sabırsız.', 'Süre kısıtlı, koliler kırılgan. Minibüsü bir yere vurma!'],
+    watch: 'van', minHealth: 40, healthMsg: 'Koliler ezildi!',
     build(r) {
       const s = r.def.pos;
       const van = carNear(r, 'van', s.x, s.z, 15, 45, { ai: 'parked', color: 0xf0f0f0 });
@@ -225,52 +241,53 @@ export function createMissions(game) {
       const dt = landmark('downtown');
       let dest = roadNear(dt.x, dt.z);
       if (dist(dest.x, dest.z, s.x, s.z) < 200) { const p = roadPt(s.x, s.z, 300, 480); dest = { x: p.x, z: p.z }; }
+      // road distance is longer than the crow-flies one (bridges, detours): pad the estimate
       const d = dist(dest.x, dest.z, s.x, s.z);
       return [
-        enterVeh('Beyaz minibüse bin.', 'van', { label: 'Minibüs' }),
-        goTo('Kargoyu şehir merkezine ulaştır. Araca çarpma!', () => dest, 13, { veh: 'van', label: 'Teslimat', timer: () => Math.max(70, d / 6 + 35) }),
+        enterVeh('Beyaz minibüse bin ve koliler yüklensin.', 'van', { label: 'Minibüs' }),
+        goTo('Kolileri Levent\'e ulaştır. Araca çarpma!', () => dest, 13, { veh: 'van', label: 'Teslimat', timer: () => Math.max(80, d / 5 + 45) }),
       ];
     },
   });
 
   def({
-    id: 'steal', title: 'Çalıntı Spor', giver: 'Usta Rıfat', landmark: 'garage', after: ['cargo'], reward: 700,
-    description: 'Borçlunun spor arabasını al ve çizdirmeden garaja getir. Polis peşine düşebilir.',
-    brief: ['Usta Rıfat: Şu spor araba var ya, sahibi borcunu ödemedi.', 'Al, garaja getir. Polis kokusunu alırsa kaçır, ama sakın çizdirme.'],
-    watch: 'car', minHealth: 45, healthMsg: 'Araç fazla hasar aldı!',
+    id: 'steal', title: 'Borçlunun Arabası', giver: 'Usta Rıfat', landmark: 'garage', after: ['cargo'], reward: 700,
+    description: 'Borcunu ödemeyen adamın spor arabasını sanayiye, Rıfat Usta\'nın atölyesine getir.',
+    brief: ['Usta Rıfat: Şu kırmızı spor var ya, sahibi iki aydır borcunu ödemiyor.', 'Al, atölyeye getir. Polis koklarsa atlat, ama sakın çizdirme.'],
+    watch: 'car', minHealth: 45, healthMsg: 'Araba fazla hasar aldı!',
     build(r) {
       const g = landmark('garage');
       const car = carNear(r, 'sports', g.x, g.z, 150, 260, { ai: 'parked', color: 0xe02030 });
       r.data.car = car;
       const dest = roadNear(g.x, g.z);
       return [
-        enterVeh('Kırmızı spor arabayı bul ve çal (haritada kırmızı işaret).', 'car', {
+        enterVeh('Kırmızı spor arabayı bul ve al (haritada kırmızı işaret).', 'car', {
           label: 'Spor Araba',
-          onDone: () => { game.police?.setWanted?.(2); notify('Alarm çaldı! Polis peşinde.', 3000); },
+          onDone: () => { game.police?.setWanted?.(2); notify('Alarm çaldı! Emniyet peşinde.', 3000); },
         }),
-        goTo('Arabayı garaja götür. Polisi atlat, hasar alma!', () => dest, 13, { veh: 'car', label: 'Garaj', grace: 20 }),
+        goTo('Arabayı sanayiye götür. Polisi atlat, çizdirme!', () => dest, 13, { veh: 'car', label: 'Atölye', grace: 20 }),
       ];
     },
   });
 
   def({
-    id: 'taxi', title: 'Taksi Vardiyası', giver: 'Telsizci Necla', landmark: 'downtown', after: ['cargo'], reward: 1000,
-    description: 'Taksiyle 4 yolcuyu al ve bırak. Hızlı olursan bahşiş artar.',
-    brief: ['Telsizci Necla: Vardiyada bir şoför eksik, taksi hazır.', 'Dört yolcu al, bırak. Ne kadar hızlı olursan bahşiş o kadar tatlı.'],
+    id: 'taxi', title: 'Sarı Taksi Vardiyası', giver: 'Telsizci Necla', landmark: 'downtown', after: ['cargo'], reward: 1000,
+    description: 'Durak taksisiyle 4 yolcuyu al ve bırak. Hızlı olursan bahşiş artar.',
+    brief: ['Telsizci Necla: Durakta bir şoför eksik, sarı taksi hazır.', 'Dört yolcu al, bırak. Ne kadar hızlı olursan bahşiş o kadar tatlı.'],
     watch: 'taxi',
     build(r) {
       const s = r.def.pos;
       r.data.taxi = carNear(r, 'taxi', s.x, s.z, 15, 45, { ai: 'parked' });
       r.data.last = { x: s.x, z: s.z };
-      const steps = [enterVeh('Taksiye bin.', 'taxi', { label: 'Taksi' })];
+      const steps = [enterVeh('Sarı taksiye bin.', 'taxi', { label: 'Taksi' })];
       for (let i = 0; i < 4; i++) {
         steps.push({
-          text: `Yolcu ${i + 1}/4: Yolcuyu al.`,
+          text: `Yolcu ${i + 1}/4: Yolcuyu durakta al.`,
           enter(rr) {
             const b = rr.data.last;
             rr.cur = walkPt(b.x, b.z, 110, 230);
             rr.data.fare = spawnPed(rr, rr.cur.x, rr.cur.z, { type: 'civilian' });
-            setTimer(rr, 80); rr.off = 0; rr.warned = false;
+            setTimer(rr, Math.max(80, dist(rr.data.taxi.position.x, rr.data.taxi.position.z, rr.cur.x, rr.cur.z) / 5 + 40)); rr.off = 0; rr.warned = false;
           },
           update(rr, dt) {
             const p = game.player, f = rr.data.fare, v = rr.data.taxi;
@@ -280,7 +297,7 @@ export function createMissions(game) {
             if (!keepIn(rr, dt, 'taxi', 30)) return false;
             if (dist(v.position.x, v.position.z, fx, fz) < 8 && Math.abs(v.speed) < 7) {
               dropPed(rr, f); rr.data.fare = null;
-              notify('Yolcu bindi.', 1800);
+              notify('Yolcu bindi. Kemer takıldı!', 1800);
               return true;
             }
             return false;
@@ -292,7 +309,7 @@ export function createMissions(game) {
             const v = rr.data.taxi;
             rr.cur = walkPt(v.position.x, v.position.z, 150, 320);
             const d = dist(v.position.x, v.position.z, rr.cur.x, rr.cur.z);
-            setTimer(rr, d / 6 + 25); rr.off = 0; rr.warned = false;
+            setTimer(rr, d / 5 + 30); rr.off = 0; rr.warned = false;
           },
           update(rr, dt) {
             const v = rr.data.taxi;
@@ -314,9 +331,9 @@ export function createMissions(game) {
   });
 
   def({
-    id: 'race', title: 'Sokak Yarışı', giver: 'Usta Rıfat', landmark: 'stadium', after: ['steal'], reward: 1400,
-    description: 'Stadyum çevresindeki yarışta tüm kontrol noktalarını süre dolmadan geç.',
-    brief: ['Usta Rıfat: Stadyum çevresinde yarış var, bahse girdim. Sürücü sensin.', 'Tüm kontrol noktalarını süre dolmadan geç. Sakın kaybetme!'],
+    id: 'race', title: 'Gece Yarışı', giver: 'Usta Rıfat', landmark: 'stadium', after: ['steal'], reward: 1400,
+    description: 'Beşiktaş\'ta, stadyum çevresindeki gece yarışında tüm kontrol noktalarını geç.',
+    brief: ['Usta Rıfat: Beşiktaş\'ta gece yarışı var, bahse girdim. Direksiyondaki sensin.', 'Tüm kontrol noktalarını süre dolmadan geç. Sakın kaybetme!'],
     watch: 'car',
     build(r) {
       const s = r.def.pos;
@@ -327,7 +344,7 @@ export function createMissions(game) {
       }
       const N = 11;
       return [
-        enterVeh('Sarı spor arabaya bin.', 'car', { label: 'Yarış Arabası' }),
+        enterVeh('Sarı yarış arabasına bin.', 'car', { label: 'Yarış Arabası' }),
         {
           text: `Kontrol noktası 1/${N}`,
           enter(rr) {
@@ -349,7 +366,7 @@ export function createMissions(game) {
             }
             rr.data.cps = pts; rr.data.ci = 0; rr.off = 0; rr.warned = false;
             setTimer(rr, total / 11 + 25);
-            say('Yarış başladı! Süreyi yakala.', 0);
+            say('Yarış başladı! Süreye yetiş.', 0);
           },
           update(rr, dt) {
             const cps = rr.data.cps, i = rr.data.ci, p = game.player;
@@ -371,15 +388,15 @@ export function createMissions(game) {
   });
 
   def({
-    id: 'ambulance', title: 'Acil Sevk', giver: 'Sedat (Paramedik)', landmark: 'hospital', after: ['taxi'], reward: 1800,
+    id: 'ambulance', title: 'Acil Sevk', giver: 'Paramedik Sedat', landmark: 'hospital', after: ['taxi'], reward: 1800,
     description: 'Üç yaralıyı süre dolmadan hastaneye yetiştir.',
-    brief: ['Sedat: Kaza yerlerinde yaralılar var, ambulans yetişemiyor.', 'Minibüsle yaralıları al, hastaneye getir. Her saniye önemli, dikkatli sür!'],
-    watch: 'van', minHealth: 30, healthMsg: 'Araç hastayı taşıyamayacak kadar hasar gördü!',
+    brief: ['Sedat: Trafik felç, kazalarda yaralılar var; ambulanslar sıkıştı.', 'Minibüsle yaralıları al, hastaneye getir. Her saniye değerli, dikkatli sür!'],
+    watch: 'van', minHealth: 30, healthMsg: 'Araç yaralıyı taşıyamayacak kadar hasar gördü!',
     build(r) {
       const h = landmark('hospital');
       const hn = roadNear(h.x, h.z);
       r.data.van = carNear(r, 'van', h.x, h.z, 15, 45, { ai: 'parked', color: 0xffffff });
-      const steps = [enterVeh('Ambulans minibüsüne bin.', 'van', { label: 'Ambulans' })];
+      const steps = [enterVeh('Sedat\'ın ambulans minibüsüne bin.', 'van', { label: 'Ambulans' })];
       for (let i = 0; i < 3; i++) {
         steps.push({
           text: `Yaralı ${i + 1}/3: Yaralıyı al.`,
@@ -414,9 +431,9 @@ export function createMissions(game) {
   });
 
   def({
-    id: 'gangs', title: 'Liman Temizliği', giver: 'Silahçı Memo', landmark: 'gunshop', after: ['race', 'ambulance'], reward: 2200,
-    description: 'Kızıl Yılanlar\'ın liman çetesinden 6 kişiyi etkisiz hale getir.',
-    brief: ['Memo: Kızıl Yılanlar limanda haraç topluyor. Sana bir tabanca ve SMG veriyorum.', 'Altı adamlarını temizle. Silahlıdırlar, siper kullan!'],
+    id: 'gangs', title: 'Haydarpaşa Baskını', giver: 'Silahçı Memo', landmark: 'gunshop', after: ['race', 'ambulance'], reward: 2200,
+    description: 'Haydarpaşa limanındaki Kızıl Yılanlar çetesinden 6 kişiyi etkisiz hale getir.',
+    brief: ['Memo: Kızıl Yılanlar Haydarpaşa\'da esnafa haraç kesiyor. Sana tabanca ve SMG veriyorum.', 'Altı adamlarını temizle. Silahlıdırlar, konteynerlerin arkasına siper al!'],
     build(r) {
       const d = landmark('docks');
       const dn = { x: d.x, z: d.z };
@@ -425,8 +442,8 @@ export function createMissions(game) {
           game.weapons?.give?.('pistol', 90); game.weapons?.give?.('smg', 160);
           notify('Tabanca ve SMG alındı.', 2500);
         }),
-        goTo('Limana git (yaya veya araçla).', () => dn, 85, {
-          label: 'Liman',
+        goTo('Haydarpaşa limanına git (yaya veya araçla).', () => dn, 85, {
+          label: 'Haydarpaşa',
           onDone: (rr) => {
             const list = [];
             for (let i = 0; i < 6; i++) {
@@ -458,18 +475,18 @@ export function createMissions(game) {
   });
 
   def({
-    id: 'heat', title: 'Ateş Hattı', giver: 'Cemile Abla', landmark: 'park', after: ['gangs'], reward: 3000,
+    id: 'heat', title: 'Ara Sokaklar', giver: 'Cemile Abla', landmark: 'park', after: ['gangs'], reward: 3000,
     description: 'Üç yıldızlı kovalamacadan sağ çık: polis seni kaybedene kadar hayatta kal.',
-    brief: ['Cemile Abla: Yılanlar seni tanıdı, polisi de peşine taktılar.', 'Üç yıldız! Ara sokaklara dal, gözden kaybol. Yıldızlar sönene kadar dayan.'],
+    brief: ['Cemile Abla: Yılanlar seni tanıdı, polisi de peşine taktılar.', 'Üç yıldız! Arka sokaklara dal, kalabalığa karış. Yıldızlar sönene kadar dayan.'],
     build() {
       const sh = landmark('safehouse');
       return [{
-        text: 'Polisten kaç! Yıldızlar sönene kadar hayatta kal.',
+        text: 'Polisten kaç! Yıldızlar sönene kadar dayan.',
         enter(r) { r.t = 0; game.police?.setWanted?.(3); },
         update(r, dt) {
           r.t += dt;
           if (r.t < 2.5 && wanted() < 3) game.police?.setWanted?.(3);
-          addT(sh.x, sh.z, 0, 'objective', 'Sığınak', false);
+          addT(sh.x, sh.z, 0, 'objective', 'Daire', false);
           return r.t > 4 && wanted() === 0;
         },
       }];
@@ -477,9 +494,9 @@ export function createMissions(game) {
   });
 
   def({
-    id: 'finale', title: 'Son Kavga', giver: 'Cemile Abla', landmark: 'pier', after: ['heat'], reward: 5000,
-    description: 'Limandaki 3 çete aracını roketatarla yok et, sonra 4 yıldızlı kovalamacadan sığınağa kaç.',
-    brief: ['Cemile Abla: Kızıl Yılanlar\'ın sevkiyat araçları limanda. İşte roketatar.', 'Üç minibüsü havaya uçur. Sonra kaç; bütün polis arkanda olacak.'],
+    id: 'finale', title: 'Yılanların Sonu', giver: 'Cemile Abla', landmark: 'pier', after: ['heat'], reward: 5000,
+    description: 'Haydarpaşa\'daki 3 çete aracını roketatarla yok et, sonra 4 yıldızlı kovalamacadan Beyoğlu\'ndaki daireye kaç.',
+    brief: ['Cemile Abla: Yılanların sevkiyat araçları Haydarpaşa\'da. Al şu roketatarı.', 'Üç minibüsü havaya uçur. Sonra kaç; bütün polis arkanda olacak.'],
     build(r) {
       const d = landmark('docks');
       const sh = landmark('safehouse');
@@ -489,8 +506,8 @@ export function createMissions(game) {
           game.weapons?.give?.('rpg', 6); game.weapons?.give?.('rifle', 90); game.weapons?.give?.('smg', 120);
           notify('Roketatar, tüfek ve SMG alındı.', 2500);
         }),
-        goTo('Limana git. Gizlice yaklaş.', () => ({ x: d.x, z: d.z }), 110, {
-          label: 'Liman',
+        goTo('Haydarpaşa\'ya git. Gizlice yaklaş.', () => ({ x: d.x, z: d.z }), 110, {
+          label: 'Haydarpaşa',
           onDone: (rr) => {
             const vans = [], guards = [];
             for (let i = 0; i < 3; i++) {
@@ -527,21 +544,21 @@ export function createMissions(game) {
             return left === 0;
           },
         },
-        action('4 yıldız! Sığınağa kaç!', () => { game.police?.setWanted?.(4); big('POLİS GELİYOR', 'Sığınağa kaç!', 3000, '#ff4057'); }),
-        goTo('Sığınağa kaç!', () => shn, 16, { label: 'Sığınak' }),
+        action('4 yıldız! Daireye kaç!', () => { game.police?.setWanted?.(4); big('POLİS GELİYOR', 'Beyoğlu\'ndaki daireye kaç!', 3000, '#ff4057'); }),
+        goTo('Beyoğlu\'ndaki daireye kaç!', () => shn, 16, { label: 'Daire' }),
         {
           text: 'Polisi atlat: yıldızlar sönsün.',
           enter() {},
-          update(rr) { addT(sh.x, sh.z, 0, 'objective', 'Sığınak', false); return wanted() === 0; },
+          update(rr) { addT(sh.x, sh.z, 0, 'objective', 'Daire', false); return wanted() === 0; },
         },
       ];
     },
   });
 
   def({
-    id: 'courier', title: 'Kurye İşi', giver: 'Hızlı Kurye', landmark: 'downtown', after: [], reward: 150, repeatable: true, unlockCount: 3,
-    description: 'Serbest dolaşım: paketi al, adrese zamanında teslim et. Küçük iş, küçük para.',
-    brief: ['Hızlı Kurye: Bir paket var, adrese zamanında yetişmeli.', 'Yayan ya da araçla, sen bilirsin.'],
+    id: 'courier', title: 'Moto Kurye İşi', giver: 'Hızlı Kurye', landmark: 'downtown', after: [], reward: 150, repeatable: true, unlockCount: 3,
+    description: 'Serbest iş: paketi al, adrese zamanında teslim et. Küçük iş, küçük para.',
+    brief: ['Hızlı Kurye: Bir paket var, adrese soğumadan yetişmeli.', 'Yayan ya da araçla, sen bilirsin. Trafik ağır, kısa yolları bil.'],
     build(r) {
       const p = game.player.position;
       const a = walkPt(p.x, p.z, 70, 150);
@@ -551,7 +568,7 @@ export function createMissions(game) {
       say(`Ödül: $${r.reward}`, 1);
       return [
         goTo('Paketi al.', () => a, 4, { label: 'Paket', onDone: () => notify('Paket alındı!', 1500) }),
-        goTo('Paketi adrese teslim et.', () => b, 5, { label: 'Adres', timer: () => d / 5 + 30 }),
+        goTo('Paketi adrese teslim et.', () => b, 5, { label: 'Adres', timer: () => d / 4 + 35 }),
       ];
     },
   });
@@ -633,7 +650,7 @@ export function createMissions(game) {
     say('Oyun kaydedildi.', 2);
     if (!d.repeatable) {
       for (const o of DEFS) if (!o.repeatable && !completed.has(o.id) && isAvailable(o)) { say(`Yeni görev: ${o.title} (sarı sütun).`, 4.5); break; }
-      if (completed.size === 3) say('Serbest kurye işleri şehir merkezinde açıldı.', 7);
+      if (completed.size === 3) say('Moto kurye işleri Levent-Taksim hattında açıldı.', 7);
     }
   }
 
@@ -829,14 +846,14 @@ export function createMissions(game) {
     if (loadedFlag) {
       if (pendingPos) game.player?.teleport?.(pendingPos.x, pendingPos.z, pendingPos.heading);
       pendingPos = null; loadedFlag = false;
-      big('NEON COAST', 'Tekrar hoş geldin, Deniz.', 3000);
+      big('İSTANBUL', 'Tekrar hoş geldin, Deniz.', 3000);
       say('Sarı sütunlar yeni görevleri gösterir.', 3.5);
       return;
     }
     if (game.state.money === 0 && completed.size === 0) game.addMoney(START_MONEY);
-    big('PALMERA', 'Hoş geldin, Deniz Kara.', 3500);
-    say('Cebinde sadece $' + game.state.money + ' var. Önce iş bulmalısın.', 3.5);
-    say('Sarı sütunun içinde durarak ilk görevi başlat. Minimap\'te sarı nokta.', 7);
+    big('İSTANBUL', 'Hoş geldin, Deniz Kara.', 3500);
+    say('Cebinde sadece $' + game.state.money + ' var. Boğaz\'ın iki yakasında iş bulmalısın.', 3.5);
+    say('Sarı sütunun içinde durarak ilk görevi başlat. Haritada sarı nokta.', 7);
     say(touch() ? 'Sol joystick ile yürü.' : 'WASD ile yürü, Shift ile koş.', 10.5);
   });
 

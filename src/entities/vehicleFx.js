@@ -20,7 +20,7 @@ void main() {
   vec2 c = gl_PointCoord - 0.5;
   float d = dot(c, c) * 4.0;
   if (d > 1.0) discard;
-  float a = vColor.a * (1.0 - d);
+  float a = vColor.a * (1.0 - d) * (1.0 - d * 0.35);
   if (uAdditive > 0.5) gl_FragColor = vec4(vColor.rgb * a, 1.0);
   else gl_FragColor = vec4(vColor.rgb, a);
 }`;
@@ -112,6 +112,29 @@ export function createVehicleFx(game) {
       fire.spawn(x + (rnd() - 0.5) * 0.6, y, z + (rnd() - 0.5) * 0.6,
         (rnd() - 0.5) * 0.6, 1.5 + rnd() * 1.5, (rnd() - 0.5) * 0.6,
         0.45 + rnd() * 0.35, 1.0 * scale, 0.3 * scale, 1.6, 0.9, 0.25, 0.9, 1.5, 0.8);
+    },
+    /** Pale tyre smoke, drifting with the car. k scales size. */
+    tyreSmoke(x, y, z, vx, vz, k = 1) {
+      smoke.spawn(x + (rnd() - 0.5) * 0.3, y, z + (rnd() - 0.5) * 0.3, vx + (rnd() - 0.5) * 1.2, 0.3 + rnd() * 0.6, vz + (rnd() - 0.5) * 1.2,
+        0.9 + rnd() * 0.9, 0.5 * k, (1.7 + rnd() * 1.2) * k, 0.78, 0.78, 0.8, 0.34, 0.35, 1.3);
+    },
+    /** Tan dust puff kicked up off-road. */
+    dust(x, y, z, vx, vz, k = 1) {
+      smoke.spawn(x + (rnd() - 0.5) * 0.4, y, z + (rnd() - 0.5) * 0.4, vx + (rnd() - 0.5), 0.5 + rnd() * 0.7, vz + (rnd() - 0.5),
+        0.8 + rnd() * 0.8, 0.5 * k, (1.8 + rnd() * 1.2) * k, 0.62, 0.55, 0.42, 0.38, 0.4, 1.6);
+    },
+    /** Small dark exhaust puff blown backwards (bx, bz = direction). */
+    exhaust(x, y, z, bx, bz) {
+      smoke.spawn(x, y, z, bx + (rnd() - 0.5) * 0.3, 0.15 + rnd() * 0.2, bz + (rnd() - 0.5) * 0.3,
+        0.45 + rnd() * 0.3, 0.1, 0.45, 0.4, 0.4, 0.42, 0.22, 0.2, 1.5);
+    },
+    /** Spark shower thrown around (nx, nz = rough direction). */
+    sparks(x, y, z, nx, nz, n = 10) {
+      for (let i = 0; i < n; i++) {
+        const a = rnd() * Math.PI * 2, sp = 2 + rnd() * 6;
+        fire.spawn(x, y, z, Math.cos(a) * sp + nx * 2, 1 + rnd() * 3.5, Math.sin(a) * sp + nz * 2,
+          0.25 + rnd() * 0.4, 0.14, 0.05, 3.2, 2.0, 0.7, 1, -9, 0.6);
+      }
     },
     explosion(x, y, z, radius = 8) {
       const s = radius / 8;

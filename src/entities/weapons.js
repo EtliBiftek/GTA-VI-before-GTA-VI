@@ -192,7 +192,8 @@ export function createWeapons(game) {
     const dmg = d.damage * falloff(best, range);
 
     if (kind === 1) {
-      fx.sparks(hx + nx * 0.03, hy + ny * 0.03, hz + nz * 0.03, nx, ny, nz, 3);
+      if (fx.impact) fx.impact(hx + nx * 0.03, hy + ny * 0.03, hz + nz * 0.03, nx, ny, nz);
+      else fx.sparks(hx + nx * 0.03, hy + ny * 0.03, hz + nz * 0.03, nx, ny, nz, 3);
     } else if (kind === 2 && ped) {
       fx.blood(hx, hy, hz, head ? 7 : 4);
       ped.takeDamage?.(dmg * (head ? HEAD_MUL : 1), { kind: 'bullet', attacker: shooter, headshot: head });
@@ -234,7 +235,7 @@ export function createWeapons(game) {
       }
       pelletTrace(shooter, ox, oy, oz, sx, sy, sz, d, i < 4);
     }
-    fx.flash(ox + dx * 0.25, oy + dy * 0.25, oz + dz * 0.25, d.pellets > 1 ? 0.9 : 0.6);
+    fx.flash(ox + dx * 0.25, oy + dy * 0.25, oz + dz * 0.25, d.pellets > 1 ? 0.9 : 0.6, dx, dy, dz);
     events.emit('gunshot', { x: ox, y: oy, z: oz, shooter, weapon: weaponId });
     if (shooter === game.player) {
       events.emit('weapon:fired', { weapon: weaponId });

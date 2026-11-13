@@ -3,6 +3,7 @@
 // Quality tier t: 0 = low (small, no normal/rough maps), 1 = medium, 2 = high.
 import * as THREE from 'three';
 import { seeded } from '../core/utils.js';
+import { upgradeSet, upgradeWaterNormal } from '../core/textureAssets.js';
 
 export const TIER = (q) => (q === 'low' ? 0 : q === 'medium' ? 1 : 2);
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -127,11 +128,11 @@ export function makeAsphalt(t, aniso) {
   for (let i = 0; i < 9; i++) crack(R() * S, R() * S, R() * 6.28, 18 + Math.floor(R() * 24), (1 + R() * 0.8) * Math.max(0.6, k));
   const out = { map: tex(cc, { srgb: true, aniso }) };
   if (t >= 1) { out.normalMap = tex(normalFrom(hc, 3.2), { aniso }); out.roughnessMap = tex(rc, { aniso }); }
-  return out;
+  return upgradeSet(out, 'asphalt', t, aniso, 16);
 }
 
 /** Paving slabs: 4 x 4 slabs of 1 m per 4 m tile. */
-export function makePavers(t, aniso) {
+export function makePavers(t, aniso, variant = 'slab') {
   const S = [128, 256, 512][t], R = seeded(411), N = makeNoise(411), n = 4, sl = S / n;
   const cc = mk(S, S), cg = cc.getContext('2d'), hc = mk(S, S), hg = hc.getContext('2d'), rc = mk(S, S), rg = rc.getContext('2d');
   const ci = cg.createImageData(S, S), hi = hg.createImageData(S, S), ri = rg.createImageData(S, S);
@@ -154,7 +155,7 @@ export function makePavers(t, aniso) {
   for (let i = 0; i < 24; i++) { cg.fillStyle = 'rgba(70,66,62,0.55)'; cg.beginPath(); cg.arc(R() * S, R() * S, Math.max(0.6, S / 500), 0, 6.3); cg.fill(); }
   const out = { map: tex(cc, { srgb: true, aniso }) };
   if (t >= 1) { out.normalMap = tex(normalFrom(hc, 3.5), { aniso }); out.roughnessMap = tex(rc, { aniso }); }
-  return out;
+  return upgradeSet(out, variant, t, aniso, 4);
 }
 
 /** Grass / dirt, 8 m per tile. Near-white luminance texture to be tinted with vertex colours. */
@@ -179,7 +180,7 @@ export function makeGrass(t, aniso) {
   for (let i = 0; i < 40; i++) { cg.fillStyle = R() < 0.5 ? 'rgba(255,255,255,0.55)' : 'rgba(255,230,120,0.5)'; cg.fillRect(R() * S, R() * S, Math.max(1, S / 256), Math.max(1, S / 256)); } // clover / daisies
   const out = { map: tex(cc, { srgb: true, aniso }) };
   if (t >= 1) out.normalMap = tex(normalFrom(hc, 2.0), { aniso });
-  return out;
+  return upgradeSet(out, 'grass', t, aniso, 8);
 }
 
 /** Sand with wind ripples, 6 m per tile. */
@@ -445,7 +446,7 @@ export function makeRoofTiles(t, aniso) {
     L.p(x, y + rh - Math.max(1, rh * 0.12), cw, Math.max(1, rh * 0.12), { c: 'rgba(0,0,0,0.5)', h: 0.15 }); // overlap shadow
   }
   L.grain(0.12, 9);
-  const m = L.maps({ aniso, normal: 3 }); delete m.emissiveMap; return m;
+  const m = L.maps({ aniso, normal: 3 }); delete m.emissiveMap; return upgradeSet(m, 'roof', t, aniso, 1.8);
 }
 
 /** Vegetation atlas: left half = palm bark (u 0..0.5), right half = frond with leaflets (u 0.5..1). Alpha. */
@@ -477,27 +478,27 @@ export function makeVeg(t, aniso) {
 // SIGNS, GLOW, WATER
 // =====================================================================================================
 export const SIGNS = [
-  ['PALMERA COLA', '#d9202e', '#fff', '#ffe27a'], ['NEONBURGER', '#ffd23a', '#c2185b', '#fff'],
-  ['KARTAL BANK', '#12305e', '#f2c14e', '#fff'], ['MAVİ TELEKOM', '#1b6fd0', '#fff', '#7ff0ff'],
-  ['SURF & SİMİT', '#14b8a6', '#fff', '#ff9f43'], ['SOLARA GÜNEŞ', '#ff7a3d', '#fff', '#ffe27a'],
-  ['DALGA FM 98.7', '#6a1bb8', '#7ff0ff', '#fff'], ['VELOCE MOTORS', '#15151c', '#ff2d4a', '#fff'],
-  ['TURKUAZ KAHVE', '#0e8a8a', '#fff', '#ffd9a0'], ['TURBO LASTİK', '#222', '#ffd23a', '#fff'],
+  ['MARTI ÇAY EVİ', '#d9202e', '#fff', '#ffe27a'], ['LODOS KAHVE', '#ffd23a', '#7a2638', '#fff'],
+  ['KARAYEL BANKASI', '#12305e', '#f2c14e', '#fff'], ['MERMER TELEKOM', '#1b6fd0', '#fff', '#7ff0ff'],
+  ['SİMİT SARAYI', '#c8741a', '#fff', '#ffe9b8'], ['POYRAZ SİGORTA', '#1d6b4f', '#fff', '#ffe27a'],
+  ['BOĞAZ FM 94.2', '#6a1bb8', '#7ff0ff', '#fff'], ['KOZA OTOMOTİV', '#15151c', '#ff2d4a', '#fff'],
+  ['BOĞAZ BAKLAVA', '#0e8a8a', '#fff', '#ffd9a0'], ['KIYI LASTİK', '#222', '#ffd23a', '#fff'],
   ['GÜVENLİ EV', '#0f8f8f', '#fff', '#ff7ab8'], ['HASTANE', '#f4f7fa', '#d62839', '#d62839'],
-  ['POLİS', '#1d3f8f', '#fff', '#ffd23a'], ['SİLAH & MÜHİMMAT', '#2a2118', '#ffb000', '#fff'],
-  ['OTO TAMİR', '#e8590c', '#fff', '#222'], ['STADYUM', '#1b7a3a', '#fff', '#ffd23a'],
+  ['EMNİYET', '#1d3f8f', '#fff', '#ffd23a'], ['AVCI MALZEME', '#2a2118', '#ffb000', '#fff'],
+  ['OTO SANAYİ', '#e8590c', '#fff', '#222'], ['STADYUM', '#1b7a3a', '#fff', '#ffd23a'],
   ['İSKELE', '#7a5230', '#fff', '#ffd9a0'], ['LİMAN', '#254a73', '#fff', '#ffb000'],
-  ['PLAJ', '#26c6da', '#fff', '#ff9f43'], ['PARK', '#2e8b57', '#fff', '#fff3a0'],
-  ['ŞEHİR MERKEZİ', '#2b1b5e', '#ff6ad5', '#7ff0ff'],
+  ['ÇAY BAHÇESİ', '#26c6da', '#fff', '#ff9f43'], ['PARK', '#2e8b57', '#fff', '#fff3a0'],
+  ['İŞ MERKEZİ', '#2b1b5e', '#ff6ad5', '#7ff0ff'],
   // 21..31 extra advertising
-  ['KUMSAL BAR', '#2a1458', '#ff6ad5', '#7ff0ff'], ['NEON PİZZA', '#b3141f', '#fff3a0', '#ffd23a'],
-  ['AKINTI KARGO', '#0f3d3e', '#ffb000', '#fff'], ['LİMON SODA', '#e8d712', '#1b7a3a', '#fff'],
-  ['DENİZ SİNEMA', '#150d2e', '#7ff0ff', '#ff6ad5'], ['SERİN OTEL', '#173a63', '#fff', '#ffd9a0'],
-  ['HIZLI KURYE', '#e8590c', '#fff', '#222'], ['ADA FİTNESS', '#111', '#8aff4a', '#fff'],
-  ['GÜN BATIMI GRİLL', '#6a1f1f', '#ffd23a', '#fff'], ['YILDIZ ECZANESİ', '#f4f7fa', '#1b8f4a', '#1b8f4a'],
-  ['MELTEM KLİMA', '#1b6fd0', '#fff', '#7ff0ff'],
+  ['KULE LOKANTASI', '#2a1458', '#ffd23a', '#7ff0ff'], ['ŞİŞLİ PİDE', '#b3141f', '#fff3a0', '#ffd23a'],
+  ['AKINTI KARGO', '#0f3d3e', '#ffb000', '#fff'], ['LİMON ŞERBET', '#e8d712', '#1b7a3a', '#fff'],
+  ['HALİÇ SİNEMA', '#150d2e', '#7ff0ff', '#ff6ad5'], ['MERKEZ OTEL', '#173a63', '#fff', '#ffd9a0'],
+  ['HIZLI KURYE', '#e8590c', '#fff', '#222'], ['ADA SPOR SALONU', '#111', '#8aff4a', '#fff'],
+  ['İSKELE BALIK EKMEK', '#6a1f1f', '#ffd23a', '#fff'], ['SERVİ ECZANESİ', '#f4f7fa', '#1b8f4a', '#1b8f4a'],
+  ['TURNA KLİMA', '#1b6fd0', '#fff', '#7ff0ff'],
   // 32..39 street name blades
-  ['PALMİYE CD.', '#155c3a', '#fff', '#fff'], ['DENİZ SK.', '#155c3a', '#fff', '#fff'], ['LALE SK.', '#155c3a', '#fff', '#fff'], ['MARTI CD.', '#155c3a', '#fff', '#fff'],
-  ['SAHİL YOLU', '#155c3a', '#fff', '#fff'], ['ÇINAR SK.', '#155c3a', '#fff', '#fff'], ['GÜNEŞ CD.', '#155c3a', '#fff', '#fff'], ['LİMAN YOLU', '#155c3a', '#fff', '#fff'],
+  ['LALE SK.', '#155c3a', '#fff', '#fff'], ['MARTI SK.', '#155c3a', '#fff', '#fff'], ['BOĞAZ CD.', '#155c3a', '#fff', '#fff'], ['KUMRU SK.', '#155c3a', '#fff', '#fff'],
+  ['SAHİL YOLU', '#155c3a', '#fff', '#fff'], ['ÇINAR SK.', '#155c3a', '#fff', '#fff'], ['SERVİ SK.', '#155c3a', '#fff', '#fff'], ['KÖPRÜ CD.', '#155c3a', '#fff', '#fff'],
 ];
 export const SIGN_ROWS = 10;
 export const SIGN_ID = { ads: 10, safehouse: 10, hospital: 11, police: 12, gunshop: 13, garage: 14, stadium: 15, pier: 16, docks: 17, beach: 18, park: 19, downtown: 20 };
@@ -566,5 +567,5 @@ export function makeWaterNormal(t) {
     const g = Math.min(255, h * 180), i = (y * S + x) * 4; im.data[i] = im.data[i + 1] = im.data[i + 2] = g; im.data[i + 3] = 255;
   }
   hg.putImageData(im, 0, 0);
-  return tex(normalFrom(hc, 6), {});
+  const wn = tex(normalFrom(hc, 6), {}); upgradeWaterNormal(wn, t, 4); return wn;
 }

@@ -1,16 +1,16 @@
 # Neon Coast
 
-Güneşli sahil şehri **Palmera**'da geçen, tamamen özgün bir açık dünya aksiyon oyunu.
+Küçültülmüş, stilize bir **İstanbul**'da (Boğaz, Haliç, iki yaka, köprüler) geçen özgün bir açık dünya aksiyon oyunu.
 Tarayıcıda, Android'de (APK) ve Windows'ta (EXE) çalışır.
 
 - Üçüncü şahıs kamera, yaya ve araç kullanımı, araç çalma
 - Trafik, yayalar, polis ve 5 yıldızlı aranma sistemi
 - Silahlar, toplanabilir eşyalar, silah dükkânı
 - Hikâye görevleri ve yan işler, otomatik kayıt
-- Gece/gündüz döngüsü, prosedürel şehir, prosedürel ses ve radyo
+- Gece/gündüz döngüsü, İstanbul haritası, ücretsiz lisanslı modeller, dokular ve ses kayıtları, üretilen radyo müziği
 - Dokunmatik kontroller (mobil), klavye + fare, oyun kolu
 
-Tüm modeller, dokular ve sesler kodla üretilir; harici varlık dosyası yoktur.
+Araç, karakter ve sokak modelleri, dokular, gökyüzleri ve ses kayıtları ücretsiz lisanslı (çoğu CC0) kaynaklardan alınmıştır; tam liste ve lisanslar için [`CREDITS.md`](CREDITS.md). Bir dosya yüklenemezse oyun kodla üretilen yedeğine döner.
 
 ## İndirme
 

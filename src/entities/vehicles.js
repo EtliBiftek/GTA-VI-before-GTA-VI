@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { clamp, rand, pick, angleDiff, headingTo, damp, wrapAngle } from '../core/utils.js';
 import {
   TYPES, buildVehicleModel, lightsGeometry, wheelGeometry, wheelMaterial, bodyMaterial, charredMaterial, trimMaterial,
+  onVehicleModelsChanged, refreshVehicleModel, getAssetWheelGeometry, assetWheelMaterial,
 } from './vehicleModels.js';
 import { createVehicleFx } from './vehicleFx.js';
 
@@ -31,6 +32,16 @@ export function createVehicles(game) {
   wheels.count = 0;
   wheels.name = 'vehicleWheels';
   scene.add(wheels);
+  // Downloaded models arrive asynchronously: swap geometry of cars that already exist, switch the shared wheel mesh.
+  let assetWheels = false;
+  onVehicleModelsChanged((id) => {
+    if (id === 'wheel') {
+      const g = getAssetWheelGeometry();
+      if (g) { wheels.geometry = g; wheels.material = assetWheelMaterial; assetWheels = true; }
+      return;
+    }
+    for (const v of list) if (v.type === id) { refreshVehicleModel(v._model, v.stats, v.destroyed); v._lightKey = v.destroyed ? 99 : -1; }
+  });
 
   // ---- temps (no per-frame allocation) ----
   const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -447,7 +458,7 @@ export function createVehicles(game) {
     v._prevVf = vf;
     v._pitch += (clamp(-acc * 0.0045, -0.06, 0.06) - v._pitch) * damp(6, dt);
     v._roll += (clamp(vf * v.angVel * 0.0042, -0.075, 0.075) - v._roll) * damp(6, dt);
-    v._spin = (v._spin + (vf / T.wheelR) * dt) % (Math.PI * 2);
+    v._spin = (v._spin + (vf / (T.visR || T.wheelR)) * dt) % (Math.PI * 2);
     v.braking = braking || ctl.brakeLights;
     v.speed = vf;
   }
@@ -931,12 +942,15 @@ export function createVehicles(game) {
     const T = v.stats;
     const c = Math.cos(v.heading), s = Math.sin(v.heading);
     const steerA = v.steer * T.steer / (1 + Math.abs(v.speed) / 20);
+    const wR = T.visR || T.wheelR, wW = T.visW || T.wheelW;
     for (let k = 0; k < T.wheels.length && wi < WHEEL_CAPACITY; k++) {
       const wh = T.wheels[k];
-      _p3.set(v.position.x + wh.x * c + wh.z * s, T.wheelR - (v.destroyed ? 0.08 : 0), v.position.z - wh.x * s + wh.z * c);
-      _e.set(v._spin, v.heading + (wh.front ? steerA : 0), 0, 'YXZ');
+      _p3.set(v.position.x + wh.x * c + wh.z * s, wR - (v.destroyed ? 0.08 : 0), v.position.z - wh.x * s + wh.z * c);
+      // the downloaded wheel is dished on its +X face: turn the right-hand wheels around (and reverse their spin)
+      const flip = assetWheels && wh.x < 0;
+      _e.set(flip ? -v._spin : v._spin, v.heading + (wh.front ? steerA : 0) + (flip ? Math.PI : 0), 0, 'YXZ');
       _q.setFromEuler(_e);
-      _s3.set(T.wheelW, T.wheelR, T.wheelR);
+      _s3.set(wW, wR, wR);
       _m4.compose(_p3, _q, _s3);
       wheels.setMatrixAt(wi++, _m4);
     }

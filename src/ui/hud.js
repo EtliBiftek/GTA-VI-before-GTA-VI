@@ -96,7 +96,7 @@ export function createHud(game) {
   const mapCv = el('canvas', '', mapWrap);
   const mapCtx = mapCv.getContext('2d');
   const legend = el('div', 'nc-panel nc-legend', mapRoot);
-  el('h2', 'nc-head', legend, 'PALMERA');
+  el('h2', 'nc-head', legend, 'İSTANBUL');
   const legendRow = (color, letter, text) => {
     const d = el('div', '', legend);
     const dot = el('span', 'dot', d, letter); dot.style.background = color;
