@@ -273,6 +273,8 @@ class Rig {
       case 'dead': clip = 'RecieveHit'; once = true; dead = 1; break;
       default: break;
     }
+    // the mixer only writes a bone when its interpolated value CHANGED, so undo last frame's procedural overrides first
+    if (this.dirty) { OVERRIDE_BONES.forEach((n, i) => this.bones[n].quaternion.copy(this.base[i])); this.dirty = false; }
     this.play(clip, state === 'jump' ? 0.12 : FADE, ts, once);
     if (state === 'jump' && this.cur) { this.cur.time = 0.28; }
     this.mixer.update(dt);

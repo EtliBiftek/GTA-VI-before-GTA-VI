@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
 const [,, fbxDir, outDir, ...only] = process.argv;
 if (!fbxDir || !outDir) { console.error('usage: node build-characters.cjs <fbxDir> <outDir> [models...]'); process.exit(1); }
 const THREE_DIR = path.resolve(__dirname, '../../node_modules/three');
-const MODELS = only.length ? only : ['Casual2_Male', 'Casual_Bald', 'Casual_Female', 'Casual2_Female', 'Casual_Male', 'Casual3_Male', 'Worker_Male', 'BlueSoldier_Male', 'Ninja_Male', 'Suit_Male', 'Cowboy_Male', 'Doctor_Male_Old', 'Suit_Female'];
+const MODELS = only.length ? only : ['Casual2_Male', 'Casual_Bald', 'Casual_Female', 'Casual2_Female', 'Casual_Male', 'Casual3_Male', 'Worker_Male', 'BlueSoldier_Male', 'Ninja_Male'];
 const KEEP_CLIPS = ['Idle', 'Walk', 'Punch', 'Shoot_OneHanded', 'Defeat', 'SitDown', 'RecieveHit', 'StandUp'];
 const ANIM_SOURCE = 'Casual2_Male';
 

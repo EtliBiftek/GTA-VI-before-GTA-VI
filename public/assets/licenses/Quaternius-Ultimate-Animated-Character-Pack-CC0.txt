@@ -1,0 +1,5 @@
+Ultimate Animated Character Pack (Nov 2019) by Quaternius
+Source: https://opengameart.org/content/animated-characters-pack  (OpenGameArt page, "License(s): CC0")
+License: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+The zip ships no licence file; this text records the licence read on the OpenGameArt page on 2026-11-12.
+Used for: public/assets/models/characters/*.glb (converted by tools/assets/build-characters.cjs; meshes re-indexed, flat shaded, materials folded into a recolourable palette).
