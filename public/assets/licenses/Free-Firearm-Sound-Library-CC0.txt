@@ -1,0 +1,10 @@
+The Free Firearm Sound Library ("Prepared SFX Library")
+https://opengameart.org/content/the-free-firearm-sound-library   (project home: http://freefirearmsfx.com)
+
+Statement from the asset page (quoted from the library's homepage):
+  "Our team holds CC0 NO RIGHTS RESERVED for this library. It may be used without royalty or credit
+   (though we would love to hear how you've used our sounds) for any application, personal or professional."
+Licence shown on the OpenGameArt asset page: CC0 (https://creativecommons.org/publicdomain/zero/1.0/)
+
+Created and recorded by Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney.
+Neon Coast uses single shots sliced from the "Prepared SFX Library" files (see CREDITS.md, Audio section).

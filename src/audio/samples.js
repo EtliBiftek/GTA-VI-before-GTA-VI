@@ -28,39 +28,39 @@ const f = (cat, name, n) => Array.from({ length: n }, (_, i) => `${cat}/${name}_
  * LOOPS (looped by loop(), not listed here): vehicles/engine_low, engine_high, siren_wail, siren_yelp, skid_loop; ambience/traffic, waves, wind, crickets.
  */
 export const MANIFEST = {
-  pistol: { files: f('weapons', 'pistol', 4), gain: 0.5, pitch: [0.97, 1.04], synth: 0.12, tier: 0 },
-  smg: { files: f('weapons', 'smg', 5), gain: 0.5, pitch: [0.97, 1.05], synth: 0.1, tier: 0 },
-  shotgun: { files: f('weapons', 'shotgun', 3), gain: 0.5, pitch: [0.97, 1.03], synth: 0.12, tier: 0 },
-  rifle: { files: f('weapons', 'rifle', 4), gain: 0.5, pitch: [0.97, 1.04], synth: 0.1, tier: 0 },
-  sniper: { files: f('weapons', 'sniper', 3), gain: 0.5, pitch: [0.97, 1.03], synth: 0.12, tier: 0 },
-  rpg: { files: ['weapons/rpg_launch'], gain: 0.5, pitch: [0.96, 1.04], synth: 0.7, tier: 0 },
-  reload: { files: f('weapons', 'reload', 3), gain: 0.5, pitch: [0.97, 1.03], synth: 0, tier: 0 },
-  pump: { files: f('weapons', 'pump', 2), gain: 0.5, pitch: [0.97, 1.03], synth: 0, tier: 0 },
-  empty: { files: f('weapons', 'empty', 2), gain: 0.5, pitch: [0.95, 1.05], synth: 0, tier: 0 },
-  weaponSwitch: { files: f('weapons', 'switch', 2), gain: 0.5, pitch: [0.95, 1.05], synth: 0.2, tier: 0 },
-  shell: { files: f('weapons', 'shell', 4), gain: 0.5, pitch: [1.0, 1.35], synth: 0, tier: 0 },
-  impact: { files: f('impacts', 'impact', 4), gain: 0.5, pitch: [0.9, 1.1], synth: 0.25, tier: 0 },
-  ping: { files: f('impacts', 'ping', 3), gain: 0.5, pitch: [0.95, 1.2], synth: 0.3, tier: 0 },
-  explosion: { files: f('impacts', 'explosion', 4), gain: 0.5, pitch: [0.92, 1.05], synth: 0.35, tier: 0 },
-  explosionFar: { files: f('impacts', 'explosion_far', 2), gain: 0.5, pitch: [0.92, 1.05], synth: 0.15, tier: 0 },
-  crash: { files: f('impacts', 'crash', 5), gain: 0.5, pitch: [0.9, 1.1], synth: 0.45, tier: 0 },
-  glass: { files: f('impacts', 'glass', 4), gain: 0.5, pitch: [0.92, 1.08], synth: 0.3, tier: 0 },
-  punch: { files: f('character', 'punch', 5), gain: 0.5, pitch: [0.92, 1.08], synth: 0.2, tier: 0 },
-  batHit: { files: f('character', 'bat', 3), gain: 0.5, pitch: [0.92, 1.08], synth: 0.2, tier: 0 },
-  bodyHit: { files: f('character', 'body', 3), gain: 0.5, pitch: [0.9, 1.1], synth: 0.2, tier: 0 },
-  hit: { files: f('character', 'hurt', 3), gain: 0.5, pitch: [0.88, 1.05], synth: 0.25, tier: 0 },
-  footstep: { files: f('character', 'step', 6), gain: 0.5, pitch: [0.92, 1.1], synth: 0, tier: 0 },
-  land: { files: f('character', 'land', 3), gain: 0.5, pitch: [0.92, 1.08], synth: 0.35, tier: 0 },
-  door: { files: f('vehicles', 'door_close', 2), gain: 0.5, pitch: [0.92, 1.05], synth: 0.15, tier: 0 },
-  doorOpen: { files: f('vehicles', 'door_open', 2), gain: 0.5, pitch: [0.92, 1.05], synth: 0.15, tier: 0 },
-  horn: { files: f('vehicles', 'horn', 2), gain: 0.5, pitch: [0.85, 1.2], synth: 0.5, tier: 0 },
-  click: { files: f('ui', 'click', 2), gain: 0.5, pitch: [0.95, 1.05], synth: 0.3, tier: 0 },
-  hover: { files: f('ui', 'hover', 2), gain: 0.5, pitch: [0.95, 1.05], synth: 0.3, tier: 0 },
-  pickup: { files: ['ui/pickup_1', 'ui/pickup_3'], gain: 0.5, pitch: [0.97, 1.03], synth: 0.35, tier: 0 },
-  money: { files: f('ui', 'money', 4), gain: 0.5, pitch: [0.97, 1.04], synth: 0.3, tier: 0 },
-  gull: { files: f('ambience', 'gull', 7), gain: 0.5, pitch: [0.9, 1.12], synth: 0, tier: 1 },
-  tramBell: { files: f('ambience', 'tram', 2), gain: 0.5, pitch: [0.95, 1.08], synth: 0.3, tier: 1 },
-  boat: { files: ['ambience/boat_1'], gain: 0.5, pitch: [0.9, 1.05], synth: 0.35, tier: 1 },
+  pistol: { files: f('weapons', 'pistol', 4), gain: 0.460, pitch: [0.97, 1.04], synth: 0.12, tier: 0 },
+  smg: { files: f('weapons', 'smg', 5), gain: 0.267, pitch: [0.97, 1.05], synth: 0.1, tier: 0 },
+  shotgun: { files: f('weapons', 'shotgun', 3), gain: 0.637, pitch: [0.97, 1.03], synth: 0.12, tier: 0 },
+  rifle: { files: f('weapons', 'rifle', 4), gain: 0.651, pitch: [0.97, 1.04], synth: 0.1, tier: 0 },
+  sniper: { files: f('weapons', 'sniper', 3), gain: 0.900, pitch: [0.97, 1.03], synth: 0.12, tier: 0 },
+  rpg: { files: ['weapons/rpg_launch'], gain: 1.245, pitch: [0.96, 1.04], synth: 0.7, tier: 0 },
+  reload: { files: f('weapons', 'reload', 3), gain: 0.900, pitch: [0.97, 1.03], synth: 0, tier: 0 },
+  pump: { files: f('weapons', 'pump', 2), gain: 1.014, pitch: [0.97, 1.03], synth: 0, tier: 0 },
+  empty: { files: f('weapons', 'empty', 2), gain: 0.166, pitch: [0.95, 1.05], synth: 0, tier: 0 },
+  weaponSwitch: { files: f('weapons', 'switch', 2), gain: 0.620, pitch: [0.95, 1.05], synth: 0.2, tier: 0 },
+  shell: { files: f('weapons', 'shell', 4), gain: 0.999, pitch: [1.0, 1.35], synth: 0, tier: 0 },
+  impact: { files: f('impacts', 'impact', 4), gain: 0.530, pitch: [0.9, 1.1], synth: 0.25, tier: 0 },
+  ping: { files: f('impacts', 'ping', 3), gain: 0.750, pitch: [0.95, 1.2], synth: 0.3, tier: 0 },
+  explosion: { files: f('impacts', 'explosion', 4), gain: 0.992, pitch: [0.92, 1.05], synth: 0.35, tier: 0 },
+  explosionFar: { files: f('impacts', 'explosion_far', 2), gain: 1.782, pitch: [0.92, 1.05], synth: 0.15, tier: 0 },
+  crash: { files: f('impacts', 'crash', 5), gain: 0.470, pitch: [0.9, 1.1], synth: 0.45, tier: 0 },
+  glass: { files: f('impacts', 'glass', 4), gain: 0.500, pitch: [0.92, 1.08], synth: 0.3, tier: 0 },
+  punch: { files: f('character', 'punch', 5), gain: 0.930, pitch: [0.92, 1.08], synth: 0.2, tier: 0 },
+  batHit: { files: f('character', 'bat', 3), gain: 0.747, pitch: [0.92, 1.08], synth: 0.2, tier: 0 },
+  bodyHit: { files: f('character', 'body', 3), gain: 0.750, pitch: [0.9, 1.1], synth: 0.2, tier: 0 },
+  hit: { files: f('character', 'hurt', 3), gain: 0.780, pitch: [0.88, 1.05], synth: 0.25, tier: 0 },
+  footstep: { files: f('character', 'step', 6), gain: 0.140, pitch: [0.92, 1.1], synth: 0, tier: 0 },
+  land: { files: f('character', 'land', 3), gain: 0.483, pitch: [0.92, 1.08], synth: 0.35, tier: 0 },
+  door: { files: f('vehicles', 'door_close', 2), gain: 0.579, pitch: [0.92, 1.05], synth: 0.15, tier: 0 },
+  doorOpen: { files: f('vehicles', 'door_open', 2), gain: 0.772, pitch: [0.92, 1.05], synth: 0.15, tier: 0 },
+  horn: { files: f('vehicles', 'horn', 2), gain: 0.974, pitch: [0.85, 1.2], synth: 0.5, tier: 0 },
+  click: { files: f('ui', 'click', 2), gain: 0.237, pitch: [0.95, 1.05], synth: 0.3, tier: 0 },
+  hover: { files: f('ui', 'hover', 2), gain: 0.594, pitch: [0.95, 1.05], synth: 0.3, tier: 0 },
+  pickup: { files: ['ui/pickup_1', 'ui/pickup_3'], gain: 2.489, pitch: [0.97, 1.03], synth: 0.35, tier: 0 },
+  money: { files: f('ui', 'money', 4), gain: 0.502, pitch: [0.97, 1.04], synth: 0.3, tier: 0 },
+  gull: { files: f('ambience', 'gull', 7), gain: 0.984, pitch: [0.9, 1.12], synth: 0, tier: 1 },
+  tramBell: { files: f('ambience', 'tram', 2), gain: 3.100, pitch: [0.95, 1.08], synth: 0.3, tier: 1 },
+  boat: { files: ['ambience/boat_1'], gain: 1.375, pitch: [0.9, 1.05], synth: 0.35, tier: 1 },
 };
 
 /** Loop files with their tier (preloaded after the core one-shots). */
@@ -128,7 +128,7 @@ export function createSamples(ctx, o = {}) {
     return p;
   }
 
-  async function runQueue(files, conc = 4) {
+  async function runQueue(files, conc = 6) {
     let i = 0;
     const worker = async () => { while (i < files.length) { const fl = files[i++]; await load(fl); } };
     await Promise.all(Array.from({ length: Math.min(conc, files.length) }, worker));

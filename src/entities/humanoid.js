@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp, damp } from '../core/utils.js';
+import { attachRig } from './riggedHumanoid.js';
 
 const HEIGHT = 1.8;
 const HIP_Y = 0.93, WAIST_Y = 1.02;
@@ -250,9 +251,20 @@ function hashOf(...vals) {
 
 const KEYS = ['hl', 'hr', 'kl', 'kr', 'sl', 'sr', 'zl', 'zr', 'el', 'er', 'tx', 'ty', 'tz', 'py', 'pz', 'bx', 'by', 'bz', 'brx', 'hx', 'hy', 'gw', 'br'];
 
-export function createHumanoid({
+// Public factory. Always returns the procedural figure; when the downloaded rigged models are loaded (and the quality tier / cap allow it)
+// the same object is upgraded in place (see riggedHumanoid.js). Extra opts: role 'player'|'cop'|'gang' picks the rigged model.
+export function createHumanoid(opts = {}) {
+  const hum = createProceduralHumanoid(opts);
+  if (typeof document === 'undefined') return hum;
+  const x = hum._look; delete hum._look;
+  try {
+    return attachRig(hum, opts, { isF: x.isF, hash: x.h, hatGeo: G.hat, mat });
+  } catch (e) { console.warn('[humanoid] rig attach failed', e); return hum; }
+}
+
+function createProceduralHumanoid({
   shirt = 0x3b82c4, pants = 0x2a2f3a, skin = 0xd9a47a, hair = 0x2b1d14, hat = null, shoes = 0x1b1b1f, glasses = false,
-  build, hairStyle, sleeves, legs, heft,
+  build, hairStyle, sleeves, legs, heft, role,
 } = {}) {
   const h = hashOf(shirt, pants, skin, hair, shoes);
   const r1 = (h & 255) / 255, r2 = ((h >>> 8) & 255) / 255, r3 = ((h >>> 16) & 255) / 255, r4 = ((h >>> 24) & 255) / 255;
@@ -456,7 +468,7 @@ export function createHumanoid({
     body.position.set(P.bx, P.by + ground * P.gw, P.bz);
   }
 
-  return { group, parts, animate, height: HEIGHT };
+  return { group, parts, animate, height: HEIGHT, dispose() {}, _look: { isF, h } };
 }
 
 // Geometries/materials are shared module-wide, so there is nothing per-instance to dispose.

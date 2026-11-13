@@ -91,7 +91,7 @@ export function createVehicleAudio(mx, game, noise, samples = null) {
     low: samples.loop('vehicles/engine_low', eng.inCar), high: samples.loop('vehicles/engine_high', eng.inCar),
     skid: samples.loop('vehicles/skid_loop', eng.out),
   } : null;
-  const ENG_K = 3.0, SKID_K = 0.5;                 // sample level relative to the synth engine / skid gains (tuned with the offline harness)
+  const ENG_K = 5.5, SKID_K = 0.5;                 // sample level relative to the synth engine / skid gains (tuned with the offline harness)
   const smooth01 = (x) => { const c = clamp(x, 0, 1); return c * c * (3 - 2 * c); };
 
   const st = { gear: 0, rpm: 850, load: 0, shiftT: 0, charKey: '', burbleT: 0, lastLoad: 0, vol: 0, slip: 0, hadVeh: false };

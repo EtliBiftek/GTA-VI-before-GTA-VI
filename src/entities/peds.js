@@ -51,6 +51,7 @@ export function createPeds(game) {
   function makeHumanoid(type) {
     const cop = type === 'cop', gang = type === 'gang';
     const cfg = {
+      role: type,
       shirt: cop ? 0x1c2a5a : gang ? pick(GANG_SHIRTS) : pick(SHIRTS),
       pants: cop ? 0x131b38 : pick(PANTS),
       skin: pick(SKINS),
@@ -108,6 +109,7 @@ export function createPeds(game) {
     const i = list.indexOf(p);
     if (i >= 0) { list[i] = list[list.length - 1]; list.pop(); }
     game.scene.remove(p.mesh);
+    p.hum?.dispose?.();
   }
 
   // ---------- damage ----------

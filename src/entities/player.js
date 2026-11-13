@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { clamp, lerp, damp, wrapAngle, angleDiff, turnToward } from '../core/utils.js';
 import { createHumanoid } from './humanoid.js';
+import { configureHumanoids, tickRigs } from './riggedHumanoid.js';
 
 const WALK = 2.2, JOG = 4.5, SPRINT = 7.5;
 const CAM_FOOT = [5, 7.5, 12];
@@ -14,8 +15,10 @@ const PITCH_MIN = -0.4, PITCH_MAX = 1.3;
 export function createPlayer(game) {
   const { scene, camera, events, input } = game;
 
+  configureHumanoids(game.settings?.quality || 'medium', !!game.isMobile);
+  events.on('settings:changed', () => configureHumanoids(game.settings?.quality || 'medium', !!game.isMobile));
   const hum = createHumanoid({
-    build: 'm',
+    role: 'player', build: 'm',
     shirt: 0x12b5a6, pants: 0xf1f1ea, skin: 0xd6a074, hair: 0x2a1a12, hat: 0xff6a5c, shoes: 0xf5f5f5, glasses: true,
   });
   const mesh = hum.group;
@@ -319,6 +322,7 @@ export function createPlayer(game) {
     else if (sp2 > 0.4) anim = 'walk';
     else anim = 'idle';
     hum.animate(anim, animT, dt, sp2);
+    tickRigs(p.x, p.z, dt);
   }
 
   function updateInVehicle(dt) {
@@ -331,6 +335,7 @@ export function createPlayer(game) {
     }
     const p = mesh.position;
     p.set(v.position.x, v.position.y || 0, v.position.z);
+    tickRigs(p.x, p.z, dt);
     player.heading = v.heading || 0;
     mesh.rotation.y = player.heading;
     player.velocity.set(v.vx || 0, 0, v.vz || 0);

@@ -59,7 +59,7 @@ export function createAmbience(mx, game, noise, samples = null) {
     traffic: samples.loop('ambience/traffic', out), waves: samples.loop('ambience/waves', wavePanDest),
     wind: samples.loop('ambience/wind', out), crickets: samples.loop('ambience/crickets', out),
   } : null;
-  const K = { traffic: 0.6, waves: 0.6, wind: 0.6, crickets: 0.6, synthKeep: 0.3 };   // sample level multipliers / synth level when a sample is live
+  const K = { traffic: 0.5, waves: 1.6, wind: 0.9, crickets: 0.6, synthKeep: 0.3 };   // sample level multipliers / synth level when a sample is live
 
   const S = { water: 0, dist: 400, dx: 0, dz: 0, hasDir: false, scanT: 0, peds: 0, pedT: 0, level: 0,
     tGull: 6, tFerry: 25, tBoat: 40, tTram: 20, tBark: 40, tHorn: 12, tLap: 1, district: '', distT: 0, amb: 0 };

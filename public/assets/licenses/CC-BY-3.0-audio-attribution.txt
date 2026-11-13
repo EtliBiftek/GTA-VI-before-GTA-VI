@@ -1,0 +1,14 @@
+Attribution notice for the two CC-BY 3.0 audio loops shipped with Neon Coast
+Licence: Creative Commons Attribution 3.0 Unported - https://creativecommons.org/licenses/by/3.0/  (legal code: https://creativecommons.org/licenses/by/3.0/legalcode)
+
+1. "Car tire squeal skid loop"  (public/assets/audio/vehicles/skid_loop.ogg)
+   Author: Tom Haigh / audible-edge (uploaded to OpenGameArt by Vertigon)
+   Source: https://opengameart.org/content/car-tire-squeal-skid-loop   - licence on the page: CC-BY 3.0
+   Changes: converted to mono OGG Vorbis, high-pass filtered, cross-faded loop, loudness-adjusted.
+
+2. "Car Engine Loop 96kHz, 4s"  (public/assets/audio/vehicles/engine_low.ogg)
+   Author: qubodup (Iwan Gabovitch)
+   Source: https://opengameart.org/content/car-engine-loop-96khz-4s   - the page lists CC-BY 3.0, GPL 3.0 and GPL 2.0; used here under CC-BY 3.0.
+   Changes: converted to mono OGG Vorbis, high-pass filtered, cross-faded loop, loudness-adjusted; played back at a variable rate (pitch) by the engine model.
+
+Credits are repeated in CREDITS.md and should be shown in the game's credits screen if one is added.
