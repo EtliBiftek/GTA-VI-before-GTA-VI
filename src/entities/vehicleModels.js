@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { assets } from '../core/assets.js';
+import { USE_DOWNLOADED } from '../core/assetConfig.js';
 
 /** Vehicle type stats. accel/brake m/s^2, speeds m/s, grip = lateral friction rate (1/s),
  *  steer = max steering angle (rad) at standstill, damageMul = damage multiplier (lower = tougher). */
@@ -724,8 +725,10 @@ function installWheelAsset(gltf) {
   for (const fn of modelListeners) fn('wheel');
 }
 // Kick off the downloads at module load; the game keeps running on procedural geometry meanwhile.
-for (const id of Object.keys(TYPES)) assets.load('vehicles/' + id + '.glb').then((g) => g && installVehicleAsset(id, g));
-assets.load('vehicles/wheel.glb').then((g) => g && installWheelAsset(g));
+if (USE_DOWNLOADED.vehicles) {
+  for (const id of Object.keys(TYPES)) assets.load('vehicles/' + id + '.glb').then((g) => g && installVehicleAsset(id, g));
+  assets.load('vehicles/wheel.glb').then((g) => g && installWheelAsset(g));
+}
 
 /** Re-point an existing vehicle model (built before the download finished) at the current geometry of its type. */
 export function refreshVehicleModel(model, T, destroyed = false) {

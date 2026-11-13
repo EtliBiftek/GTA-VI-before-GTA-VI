@@ -6,6 +6,7 @@
 // the quality tier allows it and the active-rig cap has room. The humanoid object keeps its identity (`group`, `parts`, `parts.handR`);
 // the procedural body is hidden, `handR` is re-parented to the right-hand bone, and `animate()` drives an AnimationMixer + a few
 // procedural bone overrides (aim / flee / jump / run lean). Failed loads simply leave the procedural figure.
+import { USE_DOWNLOADED } from '../core/assetConfig.js';
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assets } from '../core/assets.js';
@@ -32,18 +33,18 @@ const ROLE = {
 };
 
 // ------------------------------------------------------------------ configuration (quality tiers)
-const cfg = { maxRigged: 0, playerRig: true, quality: 'low' };
+const cfg = { maxRigged: 0, playerRig: USE_DOWNLOADED.characters, quality: 'low' };
 export function configureHumanoids(quality = 'medium', isMobile = false) {
   cfg.quality = quality;
-  cfg.maxRigged = quality === 'low' ? 0 : quality === 'medium' ? (isMobile ? 8 : 12) : (isMobile ? 12 : 20);
-  cfg.playerRig = true;
+  cfg.maxRigged = !USE_DOWNLOADED.characters || quality === 'low' ? 0 : quality === 'medium' ? (isMobile ? 8 : 12) : (isMobile ? 12 : 20);
+  cfg.playerRig = USE_DOWNLOADED.characters;
   rebalance();
 }
 
 // ------------------------------------------------------------------ loading
 let wanted = null;
 function requestAssets() {
-  if (wanted) return;
+  if (wanted || !USE_DOWNLOADED.characters) return;
   wanted = true;
   assets.load(ANIM_FILE);
   const ids = cfg.maxRigged > 0 ? Object.keys(RIG_MODELS) : ['casual_male'];
